@@ -1,5 +1,5 @@
+import 'package:ezride/App/DOMAIN/Entities%20(ordenarlas%20en%20base%20a%20los%20features)/Auth/PPROFILE_user_entity.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../DOMAIN/Entities (ordenarlas en base a los features)/Auth/user_entity.dart';
 import '../../../DOMAIN/repositories/Auth/ProfileUser_RepositoryDomain.dart';
 import '../../models/Auth/ProfileUser_Model.dart';
 import '../../../../Core/enums/enums.dart';
