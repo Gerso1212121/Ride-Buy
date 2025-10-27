@@ -7,10 +7,36 @@ import 'package:ezride/Feature/VEHICLE_DETAIL/VehicleDetail_screen-%3EPRESENTATI
 import 'package:ezride/Routers/router/MainComplete.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/auth',
+    redirect: (context, state) {
+      // Obtener el cliente de Supabase
+      final supabase = Supabase.instance.client;
+
+      // Verificar si el usuario está autenticado
+      final isAuthenticated = supabase.auth.currentSession != null;
+
+      // Obtener la ruta actual - FORMA CORRECTA
+      final currentPath = state.uri.path;
+
+      // Rutas que no requieren autenticación
+      final publicRoutes = ['/auth', '/auth-complete'];
+
+      // Si está autenticado y trata de ir a auth, redirigir al main
+      if (isAuthenticated && publicRoutes.contains(currentPath)) {
+        return '/main';
+      }
+
+      // Si no está autenticado y trata de acceder a rutas protegidas
+      if (!isAuthenticated && !publicRoutes.contains(currentPath)) {
+        return '/auth';
+      }
+
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/auth',
@@ -54,14 +80,9 @@ class AppRouter {
             return FadeTransition(
               opacity: curved,
               child: Transform.translate(
-                offset: Offset(
-                    0,
-                    20 *
-                        (1 -
-                            curved
-                                .value)), // pequeño desplazamiento desde abajo
+                offset: Offset(0, 20 * (1 - curved.value)),
                 child: Transform.scale(
-                  scale: 0.95 + (0.05 * curved.value), // leve zoom in
+                  scale: 0.95 + (0.05 * curved.value),
                   child: child,
                 ),
               ),
@@ -69,6 +90,7 @@ class AppRouter {
           },
         ),
       ),
+      // ... resto de tus rutas existentes ..
 
       // 🚗 Detalle del vehículo (desde abajo)
       GoRoute(
@@ -99,7 +121,7 @@ class AppRouter {
           },
         ),
       ),
-            GoRoute(
+      GoRoute(
         path: '/chat',
         name: 'chat',
         pageBuilder: (context, state) => CustomTransitionPage(

@@ -75,6 +75,7 @@ dependencies:
   supabase_flutter: ^2.10.2
   dio: ^5.9.0
   flutter_dotenv: ^6.0.0
+  postgres: ^3.4.8
 
 dependency_overrides:
   http: 1.4.0

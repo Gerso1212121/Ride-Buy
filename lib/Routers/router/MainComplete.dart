@@ -17,6 +17,12 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = 0; // Reinicia siempre que MainShell se cree
+  }
+
   int _currentIndex = 0;
 
   final List<Widget> _screens = [

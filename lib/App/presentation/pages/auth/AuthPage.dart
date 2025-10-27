@@ -7,8 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 // Agrega estos imports
-import '../../../DOMAIN/usecases/Auth/Login_UseCases.dart';
-import '../../../DOMAIN/usecases/Auth/Register_UseCases.dart';
+import '../../../DOMAIN/usecases/Auth/Auth_UseCase.dart';
 import '../../../DATA/repositories/Auth/ProfileUser_RepositoryData.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -26,8 +25,7 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
   bool _isLoading = false;
 
   // ✅ INICIALIZAR CASOS DE USO
-  late final LoginUseCases loginUserUseCase;
-  late final RegisterUseCases registerUserUseCase;
+  late final ProfileUserUseCaseGlobal profileUserUseCaseGlobal;
 
   @override
   void initState() {
@@ -40,8 +38,7 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
   void _initializeUseCases() {
     final supabaseClient = Supabase.instance.client;
     final userRepository = ProfileUserRepositoryData(supabaseClient);
-    loginUserUseCase = LoginUseCases(userRepository);
-    registerUserUseCase = RegisterUseCases(userRepository);
+    profileUserUseCaseGlobal = ProfileUserUseCaseGlobal(userRepository);
   }
 
   void _initializeTabController() {
@@ -113,48 +110,43 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
     );
   }
 
-void _handleSignIn(BuildContext context) async {
-  final email = _model.emailAddressTextController.text.trim();
-  final password = _model.passwordTextController.text.trim();
+  void _handleSignIn(BuildContext context) async {
+    final email = _model.emailAddressTextController.text.trim();
+    final password = _model.passwordTextController.text.trim();
 
-  if (email.isEmpty || password.isEmpty) {
-    _showSnackBar(context, 'Por favor completa todos los campos');
-    return;
+    if (email.isEmpty || password.isEmpty) {
+      _showSnackBar(context, 'Por favor completa todos los campos');
+      return;
+    }
+
+    // Mostrar diálogo de carga
+    _showLoadingDialog(context, 'Iniciando sesión...');
+
+    try {
+      final profile = await profileUserUseCaseGlobal.login(
+        email: email,
+        password: password,
+      );
+
+      // Cerrar diálogo de carga
+      if (mounted) Navigator.of(context).pop();
+
+      _navigateToAuthComplete(context);
+    } catch (e) {
+      if (mounted) Navigator.of(context).pop();
+      _showErrorDialog(
+        context,
+        'Error al iniciar sesión',
+        _getErrorMessage(e),
+      );
+    }
   }
-
-  // Mostrar diálogo de carga
-  _showLoadingDialog(context, 'Iniciando sesión...');
-
-  try {
-    final profile = await loginUserUseCase(
-      email: email,
-      password: password,
-    );
-
-    // Cerrar diálogo de carga
-    if (mounted) Navigator.of(context).pop();
-
-    _navigateToAuthComplete(context);
-  } catch (e) {
-    // Cerrar diálogo de carga
-    if (mounted) Navigator.of(context).pop();
-
-    _showErrorDialog(
-      context,
-      'Error al iniciar sesión',
-      _getErrorMessage(e),
-    );
-  }
-}
 
   void _handleRegister(BuildContext context) async {
-    final email = _model.emailAddressCreateTextController.text;
-    final password = _model.passwordCreateTextController.text;
-    final confirmPassword = _model.passwordConfirmTextController.text;
+    final email = _model.emailAddressCreateTextController.text.trim();
+    final password = _model.passwordCreateTextController.text.trim();
+    final confirmPassword = _model.passwordConfirmTextController.text.trim();
 
-    print('Register attempt with: $email');
-
-    // Validaciones
     if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       _showSnackBar(context, 'Por favor completa todos los campos');
       return;
@@ -174,16 +166,13 @@ void _handleSignIn(BuildContext context) async {
     _showLoadingDialog(context, 'Creando tu cuenta...');
 
     try {
-      // ✅ USAR CASO DE USO PARA REGISTRO
-      final profile = await registerUserUseCase(
+      final profile = await profileUserUseCaseGlobal.register(
         email: email,
         password: password,
       );
 
-      // Cerrar diálogo de carga
       if (mounted) Navigator.of(context).pop();
 
-      // Mostrar diálogo de éxito
       _showSuccessDialog(
         context,
         '¡Registro exitoso!',
@@ -191,10 +180,7 @@ void _handleSignIn(BuildContext context) async {
         () => _navigateToAuthComplete(context),
       );
     } catch (e) {
-      // Cerrar diálogo de carga
       if (mounted) Navigator.of(context).pop();
-
-      // Mostrar diálogo de error
       _showErrorDialog(
         context,
         'Error al registrar',
@@ -205,42 +191,42 @@ void _handleSignIn(BuildContext context) async {
 
   // ✅ FUNCIONES AUXILIARES PARA DIÁLOGOS
 
-void _showLoadingDialog(BuildContext context, String message) {
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (BuildContext context) {
-      return Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: EdgeInsets.zero,
-        child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.5), // Fondo semitransparente
-          ),
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(width: 20),
-                  Text(message),
-                ],
+  void _showLoadingDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.zero,
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.5), // Fondo semitransparente
+            ),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(width: 20),
+                    Text(message),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
   void _showSuccessDialog(
       BuildContext context, String title, String message, VoidCallback onOk) {
