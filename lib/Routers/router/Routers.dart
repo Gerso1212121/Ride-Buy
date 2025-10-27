@@ -1,6 +1,6 @@
 import 'package:ezride/App/presentation/pages/auth/AuthComplete.dart';
 import 'package:ezride/App/presentation/pages/auth/AuthPage.dart';
-import 'package:ezride/Feature/Home/Chat/Chat_screen-%3EPRESENTATION.dart';
+import 'package:ezride/Feature/Home/Chat/Chat_screen__PRESENTATION.dart';
 import 'package:ezride/Feature/PAY_SUCCESS/Pay_Success-%3EPRESENTATION.dart';
 import 'package:ezride/Feature/RENTAR_VEHICLE/RentVehicle_screen-%3EPRESENTATION.dart';
 import 'package:ezride/Feature/VEHICLE_DETAIL/VehicleDetail_screen-%3EPRESENTATION.dart';
