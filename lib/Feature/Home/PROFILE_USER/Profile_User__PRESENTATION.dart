@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:ezride/App/DATA/repositories/Auth/ProfileUser_RepositoryData.dart';
 import 'package:ezride/App/DOMAIN/Entities%20(ordenarlas%20en%20base%20a%20los%20features)/Auth/PROFILE_user_entity.dart';
 import 'package:ezride/App/DOMAIN/usecases/Auth/Auth_UseCase.dart';
@@ -9,7 +10,6 @@ import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileUser extends StatefulWidget {
   const ProfileUser({super.key});
@@ -18,41 +18,52 @@ class ProfileUser extends StatefulWidget {
   State<ProfileUser> createState() => _ProfileUserState();
 }
 
-class _ProfileUserState extends State<ProfileUser> {
-  Profile? profile;
+  class _ProfileUserState extends State<ProfileUser> {
+    Profile? profile;
+    late final ProfileUserUseCaseGlobal profileUserUseCaseGlobal;
 
-  late final ProfileUserUseCaseGlobal profileUserUseCaseGlobal;
+    @override
+    void initState() {
+      super.initState();
 
-  @override
-  void initState() {
-    super.initState();
-    final supabaseClient = Supabase.instance.client;
-    final userRepository = ProfileUserRepositoryData(supabaseClient);
-    profileUserUseCaseGlobal = ProfileUserUseCaseGlobal(userRepository);
+      // ✅ Inicializamos el caso de uso sin Supabase
+      final userRepository = ProfileUserRepositoryData(
+        dio: Dio(), // instancia de Dio
+        emailJsServiceId: 'service_tczlzw7',
+        emailJsTemplateId: 'template_c91hr57',
+        emailJsPublicKey: '56McWSWJGEAB5ppuf',
+      );
+      profileUserUseCaseGlobal = ProfileUserUseCaseGlobal(userRepository);
 
-    _loadProfile(); // Cargar perfil al iniciar
-  }
+      _loadProfile();
+    }
 
+  /// 📦 Carga el perfil del usuario desde la sesión local o desde la BD
   Future<void> _loadProfile() async {
-    final currentUser = Supabase.instance.client.auth.currentUser;
-    if (currentUser != null) {
-      try {
-        final fetchedProfile =
-            await profileUserUseCaseGlobal.getProfile(currentUser.id);
+    try {
+      // Primero intentar obtener la sesión local
+      final localSession =
+          await profileUserUseCaseGlobal.repository.getLocalSession();
 
-        // Guardar en sesión y estado local
+      if (localSession != null) {
+        // Si hay sesión local, obtener perfil actualizado desde la BD
+        final fetchedProfile =
+            await profileUserUseCaseGlobal.getProfile(localSession.id);
+
+        // Guardar en SessionManager y en el estado
         if (fetchedProfile != null) {
-          SessionManager.setProfile(fetchedProfile);
-          setState(() {
-            profile = fetchedProfile;
-          });
+          await SessionManager.setProfile(fetchedProfile);
+          setState(() => profile = fetchedProfile);
         }
-      } catch (e) {
-        print('Error loading profile: $e');
+      } else {
+        print('⚠️ No hay sesión activa');
       }
+    } catch (e) {
+      print('❌ Error loading profile: $e');
     }
   }
 
+  /// 📍 Mostrar diálogo de cierre de sesión
   Future<void> _showLogoutDialog(BuildContext context) async {
     bool isLoading = false;
 
@@ -84,7 +95,7 @@ class _ProfileUserState extends State<ProfileUser> {
                       onPressed: () async {
                         setState(() => isLoading = true);
 
-                        // ✅ Usar el use case global para logout
+                        // ✅ Usar el caso de uso global para logout
                         final success = await profileUserUseCaseGlobal.logout();
 
                         setState(() => isLoading = false);
@@ -93,9 +104,8 @@ class _ProfileUserState extends State<ProfileUser> {
                           // Limpiar sesión local
                           await SessionManager.clearProfile();
 
-                          // Navegar al auth
                           if (context.mounted) {
-                            GoRouter.of(context).push('/auth');
+                            GoRouter.of(context).pushReplacement('/auth');
                           }
                         } else {
                           if (context.mounted) {
@@ -121,14 +131,14 @@ class _ProfileUserState extends State<ProfileUser> {
     final theme = FlutterFlowTheme.of(context);
     final currentProfile = profile ?? SessionManager.currentProfile;
 
-    // Datos basados únicamente en la entity Profile
+    // Información general
     final userData = {
       'userName': currentProfile?.displayName ?? 'Invitado',
       'verificationStatus':
           currentProfile?.verificationStatus?.name ?? 'pendiente',
     };
 
-    // Información personal usando solo datos disponibles en la entity
+    // Información personal
     final personalInfoItems = [
       PersonalInfoItem(
         icon: Icons.phone_rounded,
@@ -170,23 +180,19 @@ class _ProfileUserState extends State<ProfileUser> {
       ),
     ];
 
-    // Acciones del perfil
+    // Acciones
     final profileActions = [
       ProfileActionItem(
         title: 'Editar Perfil',
         icon: Icons.edit_outlined,
         iconColor: theme.primary,
-        onTap: () {
-          print('Editar perfil');
-        },
+        onTap: () => print('Editar perfil'),
       ),
       ProfileActionItem(
         title: 'Configuración',
         icon: Icons.settings_outlined,
         iconColor: theme.primary,
-        onTap: () {
-          print('Configuración');
-        },
+        onTap: () => print('Configuración'),
       ),
       ProfileActionItem(
         title: 'Cerrar Sesión',
@@ -203,7 +209,7 @@ class _ProfileUserState extends State<ProfileUser> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Header del perfil
+              // Header
               ProfileHeader(
                 imageUrl: 'https://example.com/profile.jpg',
                 userName: userData['userName']!,

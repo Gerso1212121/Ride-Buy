@@ -1,3 +1,4 @@
+import 'package:ezride/App/DATA/models/Auth/AuthProfilesUser_Model.dart';
 import 'package:ezride/App/DOMAIN/Entities%20(ordenarlas%20en%20base%20a%20los%20features)/Auth/PROFILE_user_entity.dart';
 
 abstract class ProfileUserRepositoryDomain {
@@ -10,7 +11,17 @@ abstract class ProfileUserRepositoryDomain {
     required String email,
     required String password,
   });
+
   Future<bool> logoutUser();
 
   Future<Profile> getUserProfile({required String userId});
+
+  // Sesión local
+  Future<AuthProfilesUserModel?> getLocalSession();
+
+  // ✅ Nuevo método para verificar OTP
+  Future<bool> verifyOtp({
+    required String email,
+    required String inputOtp,
+  });
 }

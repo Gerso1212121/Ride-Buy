@@ -1,6 +1,6 @@
 import 'package:ezride/Core/enums/enums.dart';
 
-/// Entidad base que representa la tabla `profiles` en el dominio de la app.
+/// Entidad base que representa la tabla `profiles` en la base de datos.
 class Profile {
   final String id;
   final UserRole role;

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
 import 'package:ezride/Feature/AUTH/Auth_Header.dart';
 import 'package:ezride/Feature/AUTH/Auth_Tabs.dart';
@@ -36,8 +37,13 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
   }
 
   void _initializeUseCases() {
-    final supabaseClient = Supabase.instance.client;
-    final userRepository = ProfileUserRepositoryData(supabaseClient);
+    final dio = Dio();
+    final userRepository = ProfileUserRepositoryData(
+      dio: dio,
+      emailJsServiceId: 'tu_service_id',
+      emailJsTemplateId: 'tu_template_id',
+      emailJsPublicKey: 'tu_public_key',
+    );
     profileUserUseCaseGlobal = ProfileUserUseCaseGlobal(userRepository);
   }
 
@@ -110,6 +116,7 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
     );
   }
 
+  // ---------------- LOGIN ----------------
   void _handleSignIn(BuildContext context) async {
     final email = _model.emailAddressTextController.text.trim();
     final password = _model.passwordTextController.text.trim();
@@ -119,7 +126,6 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
       return;
     }
 
-    // Mostrar diálogo de carga
     _showLoadingDialog(context, 'Iniciando sesión...');
 
     try {
@@ -128,9 +134,7 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
         password: password,
       );
 
-      // Cerrar diálogo de carga
       if (mounted) Navigator.of(context).pop();
-
       _navigateToAuthComplete(context);
     } catch (e) {
       if (mounted) Navigator.of(context).pop();
@@ -142,55 +146,98 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
     }
   }
 
-  void _handleRegister(BuildContext context) async {
-    final email = _model.emailAddressCreateTextController.text.trim();
-    final password = _model.passwordCreateTextController.text.trim();
-    final confirmPassword = _model.passwordConfirmTextController.text.trim();
+  // ---------------- REGISTRO ----------------
+void _handleRegister(BuildContext context) async {
+  final email = _model.emailAddressCreateTextController.text.trim();
+  final password = _model.passwordCreateTextController.text.trim();
+  final confirmPassword = _model.passwordConfirmTextController.text.trim();
 
-    if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-      _showSnackBar(context, 'Por favor completa todos los campos');
-      return;
-    }
-
-    if (password != confirmPassword) {
-      _showSnackBar(context, 'Las contraseñas no coinciden');
-      return;
-    }
-
-    if (password.length < 6) {
-      _showSnackBar(context, 'La contraseña debe tener al menos 6 caracteres');
-      return;
-    }
-
-    // Mostrar diálogo de carga
-    _showLoadingDialog(context, 'Creando tu cuenta...');
-
-    try {
-      final profile = await profileUserUseCaseGlobal.register(
-        email: email,
-        password: password,
-      );
-
-      if (mounted) Navigator.of(context).pop();
-
-      _showSuccessDialog(
-        context,
-        '¡Registro exitoso!',
-        'Tu cuenta ha sido creada correctamente. Bienvenido ${profile.displayName}',
-        () => _navigateToAuthComplete(context),
-      );
-    } catch (e) {
-      if (mounted) Navigator.of(context).pop();
-      _showErrorDialog(
-        context,
-        'Error al registrar',
-        _getErrorMessage(e),
-      );
-    }
+  if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    _showSnackBar(context, 'Por favor completa todos los campos');
+    return;
   }
 
-  // ✅ FUNCIONES AUXILIARES PARA DIÁLOGOS
+  if (password != confirmPassword) {
+    _showSnackBar(context, 'Las contraseñas no coinciden');
+    return;
+  }
 
+  if (password.length < 6) {
+    _showSnackBar(context, 'La contraseña debe tener al menos 6 caracteres');
+    return;
+  }
+
+  _showLoadingDialog(context, 'Creando tu cuenta...');
+
+  try {
+    print('📌 Intentando registrar usuario: $email');
+
+    final profile = await profileUserUseCaseGlobal.register(
+      email: email,
+      password: password,
+    );
+
+    print('✅ Registro exitoso: ${profile.id}');
+
+    if (!mounted) return;
+    Navigator.of(context).pop(); // cerrar diálogo de carga
+    _showOtpDialog(context, email);
+  } catch (e, st) {
+    if (mounted) Navigator.of(context).pop();
+    print('❌ Error en _handleRegister: $e');
+    print(st);
+    _showErrorDialog(
+      context,
+      'Error al registrar',
+      e.toString(),
+    );
+  }
+}
+
+
+  // ---------------- OTP ----------------
+  void _showOtpDialog(BuildContext context, String email) {
+    final otpController = TextEditingController();
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Verificación OTP'),
+          content: TextField(
+            controller: otpController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Ingresa el código OTP',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                final inputOtp = otpController.text.trim();
+                final isValid =
+                    await profileUserUseCaseGlobal.repository.verifyOtp(
+                  email: email, // << parámetro nombrado
+                  inputOtp: inputOtp, // << parámetro nombrado
+                );
+
+                if (isValid) {
+                  Navigator.of(ctx).pop();
+                  _showSnackBar(context, 'OTP verificado correctamente');
+                  _navigateToAuthComplete(context);
+                } else {
+                  _showSnackBar(context, 'OTP incorrecto');
+                }
+              },
+              child: const Text('Verificar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ---------------- DIALOGOS ----------------
   void _showLoadingDialog(BuildContext context, String message) {
     showDialog(
       context: context,
@@ -203,7 +250,7 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
             width: double.infinity,
             height: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.5), // Fondo semitransparente
+              color: Colors.black.withOpacity(0.5),
             ),
             child: Center(
               child: Container(
@@ -223,28 +270,6 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
               ),
             ),
           ),
-        );
-      },
-    );
-  }
-
-  void _showSuccessDialog(
-      BuildContext context, String title, String message, VoidCallback onOk) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                onOk();
-              },
-              child: const Text('Continuar'),
-            ),
-          ],
         );
       },
     );
@@ -285,33 +310,7 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
     }
   }
 
-  // ✅ FUNCIONES EXISTENTES (sin cambios)
-
-  void _handleForgotPassword(BuildContext context) {
-    print('Navigate to forgot password page');
-    _showSnackBar(context, 'Funcionalidad de recuperación de contraseña');
-  }
-
-  void _switchToRegisterTab() {
-    print('Switch to register tab');
-    _model.tabBarController?.animateTo(1);
-  }
-
-  void _handleGoogleAuthLogin(BuildContext context) {
-    print('Google Auth for Login');
-    _showSnackBar(context, 'Iniciando sesión con Google');
-  }
-
-  void _switchToLoginTab() {
-    print('Switch to login tab');
-    _model.tabBarController?.animateTo(0);
-  }
-
-  void _handleGoogleAuthRegister(BuildContext context) {
-    print('Google Auth for Register');
-    _showSnackBar(context, 'Registrando con Google');
-  }
-
+  // ---------------- NAVEGACION ----------------
   void _navigateToAuthComplete(BuildContext context) {
     try {
       GoRouter.of(context).go('/main');
@@ -321,12 +320,33 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
     }
   }
 
+  // ---------------- TAB SWITCH ----------------
+  void _switchToRegisterTab() {
+    _model.tabBarController?.animateTo(1);
+  }
+
+  void _switchToLoginTab() {
+    _model.tabBarController?.animateTo(0);
+  }
+
+  // ---------------- SNACKBAR ----------------
   void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-      ),
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
+  }
+
+  // ---------------- GOOGLE AUTH ----------------
+  void _handleGoogleAuthLogin(BuildContext context) {
+    _showSnackBar(context, 'Iniciando sesión con Google');
+  }
+
+  void _handleGoogleAuthRegister(BuildContext context) {
+    _showSnackBar(context, 'Registrando con Google');
+  }
+
+  // ---------------- FORGOT PASSWORD ----------------
+  void _handleForgotPassword(BuildContext context) {
+    _showSnackBar(context, 'Funcionalidad de recuperación de contraseña');
   }
 }
