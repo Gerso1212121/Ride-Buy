@@ -9,14 +9,27 @@ class Documento {
   final DocumentType? tipoVehiculo;
   final DocumentType? tipoEmpresa;
   final DocumentType? tipoPerfil;
+
+  // Datos del archivo
   final String filePath;
   final DateTime? venceEn;
+
+  // Estado de verificación
   final DocumentStatus verificationStatus;
   final bool visibleParaCliente;
+
+  // OCR / AI
   final Map<String, dynamic>? ocrData;
   final String? aiAnalysisId;
+
+  // Info de creación
   final String? createdBy;
   final DateTime createdAt;
+
+  // NUEVOS CAMPOS PARA HASH Y PROVEEDOR
+  final String? hash;
+  final String? sourceType; // 'document_front', 'document_back', 'selfie'
+  final String? provider; // 'AzureDocumentIntelligence', 'FaceAPI', etc.
 
   Documento({
     required this.id,
@@ -35,5 +48,8 @@ class Documento {
     this.aiAnalysisId,
     this.createdBy,
     required this.createdAt,
+    this.hash,
+    this.sourceType,
+    this.provider,
   });
 }

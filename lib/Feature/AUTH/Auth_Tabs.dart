@@ -1,6 +1,6 @@
 import 'package:ezride/Feature/AUTH/Auth_LoginForm.dart';
 import 'package:ezride/Feature/AUTH/Auth_Registerform.dart';
-import 'package:ezride/Feature/AUTH/controller/Auth_controller.dart';
+import 'package:ezride/Feature/AUTH/Auht_Model/Auth_Model.dart';
 import 'package:ezride/flutter_flow/flutter_flow_animations.dart';
 import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
 import 'package:flutter/material.dart';

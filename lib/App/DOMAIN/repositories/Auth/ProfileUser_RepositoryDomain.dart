@@ -14,7 +14,7 @@ abstract class ProfileUserRepositoryDomain {
 
   Future<bool> logoutUser();
 
-  Future<Profile> getUserProfile({required String userId});
+  Future<Profile> getUserProfile({required String email});
 
   // Sesión local
   Future<AuthProfilesUserModel?> getLocalSession();

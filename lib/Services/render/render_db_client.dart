@@ -16,7 +16,9 @@ class RenderDbClient {
     _connection = await Connection.open(
       Endpoint(
         host: connectionUri.host,
-        port: connectionUri.port,
+        port: connectionUri.port != 0
+            ? connectionUri.port
+            : 5432, // 🔹 usar 5432 si es 0
         database: connectionUri.path.substring(1),
         username: connectionUri.userInfo.split(':')[0],
         password: connectionUri.userInfo.split(':')[1],
@@ -81,5 +83,32 @@ class RenderDbClient {
       _connection = null;
       print('Conexión cerrada correctamente.');
     }
+  }
+
+  /// Inserta un documento en la DB
+  static Future<void> insertDocument({
+    required Map<String, dynamic> ocrData,
+    required String hash,
+    required DateTime createdAt,
+    String? sourceType,
+    String? provider,
+  }) async {
+    if (_connection == null) await init();
+
+    await _connection!.execute(
+      Sql.named(
+        '''
+      INSERT INTO documentos (ocr_data, hash, created_at, source_type, provider)
+      VALUES (@ocrData, @hash, @createdAt, @sourceType, @provider)
+      ''',
+      ),
+      parameters: {
+        'ocrData': ocrData,
+        'hash': hash,
+        'createdAt': createdAt.toIso8601String(),
+        'sourceType': sourceType,
+        'provider': provider,
+      },
+    );
   }
 }

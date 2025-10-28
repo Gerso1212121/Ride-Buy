@@ -1,5 +1,5 @@
 import 'dart:ui';
-import 'package:ezride/Feature/AUTH/controller/Auth_controller.dart';
+import 'package:ezride/Feature/AUTH/Auht_Model/Auth_Model.dart';
 import 'package:ezride/Feature/AUTH/widget/Auth_CustomButton_widget.dart';
 import 'package:ezride/Feature/AUTH/widget/Auth_CustomTextField_widget.dart';
 import 'package:ezride/Feature/AUTH/widget/Auth_SocialButton_widget.dart';

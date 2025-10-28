@@ -6,34 +6,72 @@ class ProfileUserUseCaseGlobal {
 
   ProfileUserUseCaseGlobal(this.repository);
 
-  // Login
-  Future<Profile> login(
-      {required String email, required String password}) async {
-    if (email.isEmpty || password.isEmpty) {
-      throw Exception('Email and password must not be empty');
+  // ------------------------------
+  // LOGIN
+  // ------------------------------
+  Future<Profile> login({required String email, required String password}) async {
+    if (email.trim().isEmpty || password.trim().isEmpty) {
+      throw Exception('Email y contraseña no pueden estar vacíos');
     }
-    return await repository.loginUser(email: email, password: password);
+
+    try {
+      final profile = await repository.loginUser(
+        email: email.trim(),
+        password: password.trim(),
+      );
+      return profile;
+    } catch (e) {
+      print('❌ Error iniciando sesión para $email: $e');
+      rethrow;
+    }
   }
 
-  // Register
-  Future<Profile> register(
-      {required String email, required String password}) async {
-    if (email.isEmpty || password.isEmpty) {
-      throw Exception('Email and password must not be empty');
+  // ------------------------------
+  // REGISTER
+  // ------------------------------
+  Future<Profile> register({required String email, required String password}) async {
+    if (email.trim().isEmpty || password.trim().isEmpty) {
+      throw Exception('Email y contraseña no pueden estar vacíos');
     }
-    return await repository.registerUser(email: email, password: password);
+
+    try {
+      final profile = await repository.registerUser(
+        email: email.trim(),
+        password: password.trim(),
+      );
+      return profile;
+    } catch (e) {
+      print('❌ Error registrando usuario $email: $e');
+      rethrow;
+    }
   }
 
-  // Get user profile
-  Future<Profile?> getProfile(String userId) async {
-    if (userId.isEmpty) {
-      throw Exception('User ID must not be empty');
+  // ------------------------------
+  // GET PROFILE
+  // ------------------------------
+  Future<Profile?> getProfile(String email) async {
+    if (email.trim().isEmpty) {
+      throw Exception('Email no puede estar vacío');
     }
-    return await repository.getUserProfile(userId: userId);
+
+    try {
+      final profile = await repository.getUserProfile(email: email.trim());
+      return profile;
+    } catch (e) {
+      print('❌ Error obteniendo perfil para $email: $e');
+      return null;
+    }
   }
 
-  // Logout
+  // ------------------------------
+  // LOGOUT
+  // ------------------------------
   Future<bool> logout() async {
-    return await repository.logoutUser();
+    try {
+      return await repository.logoutUser();
+    } catch (e) {
+      print('❌ Error cerrando sesión: $e');
+      return false;
+    }
   }
 }

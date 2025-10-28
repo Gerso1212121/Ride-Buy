@@ -18,48 +18,80 @@ class ProfileUser extends StatefulWidget {
   State<ProfileUser> createState() => _ProfileUserState();
 }
 
-  class _ProfileUserState extends State<ProfileUser> {
-    Profile? profile;
-    late final ProfileUserUseCaseGlobal profileUserUseCaseGlobal;
+class _ProfileUserState extends State<ProfileUser> {
+  Profile? profile;
+  late final ProfileUserUseCaseGlobal profileUserUseCaseGlobal;
 
-    @override
-    void initState() {
-      super.initState();
+  @override
+  void initState() {
+    super.initState();
 
-      // ✅ Inicializamos el caso de uso sin Supabase
-      final userRepository = ProfileUserRepositoryData(
-        dio: Dio(), // instancia de Dio
-        emailJsServiceId: 'service_tczlzw7',
-        emailJsTemplateId: 'template_c91hr57',
-        emailJsPublicKey: '56McWSWJGEAB5ppuf',
-      );
-      profileUserUseCaseGlobal = ProfileUserUseCaseGlobal(userRepository);
+    // ✅ Inicializamos el caso de uso sin Supabase
+    final userRepository = ProfileUserRepositoryData(
+      dio: Dio(), // instancia de Dio
+    );
+    profileUserUseCaseGlobal = ProfileUserUseCaseGlobal(userRepository);
 
-      _loadProfile();
-    }
+    _loadProfile();
+  }
 
+  /// 📦 Carga el perfil del usuario desde la sesión local o desde la BD
   /// 📦 Carga el perfil del usuario desde la sesión local o desde la BD
   Future<void> _loadProfile() async {
     try {
-      // Primero intentar obtener la sesión local
+      // Obtener la sesión local
       final localSession =
           await profileUserUseCaseGlobal.repository.getLocalSession();
 
-      if (localSession != null) {
-        // Si hay sesión local, obtener perfil actualizado desde la BD
-        final fetchedProfile =
-            await profileUserUseCaseGlobal.getProfile(localSession.id);
+      // ⚠️ Verificar si la sesión o email no existen
+      if (localSession?.email == null || localSession!.email!.isEmpty) {
+        print('⚠️ Sesión local inválida o email no definido');
 
-        // Guardar en SessionManager y en el estado
-        if (fetchedProfile != null) {
-          await SessionManager.setProfile(fetchedProfile);
+        // Aquí puedes mostrar un modal en vez de solo print
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text('Sesión inválida'),
+              content: const Text('Por favor inicia sesión nuevamente.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cerrar'),
+                ),
+              ],
+            ),
+          );
+        }
+        return;
+      }
+
+      // Ahora es seguro usar el email
+      final fetchedProfile =
+          await profileUserUseCaseGlobal.getProfile(localSession.email!);
+
+      if (fetchedProfile != null) {
+        // Guardar sesión en local
+        await SessionManager.setProfile(fetchedProfile);
+
+        if (mounted) {
           setState(() => profile = fetchedProfile);
         }
       } else {
-        print('⚠️ No hay sesión activa');
+        print('⚠️ Perfil no encontrado para el ID: ${localSession.id}');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Perfil no encontrado')),
+          );
+        }
       }
-    } catch (e) {
-      print('❌ Error loading profile: $e');
+    } catch (e, stack) {
+      print('❌ Error loading profile: $e\n$stack');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al cargar el perfil: $e')),
+        );
+      }
     }
   }
 

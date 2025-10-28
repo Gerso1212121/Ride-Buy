@@ -1,8 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:ezride/App/presentation/pages/auth/EMAIL_OTP.dart';
+import 'package:ezride/Feature/Home/HOME/home_screen__PRESENTATION.dart';
+import 'package:ezride/Routers/router/MainComplete.dart';
 import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
 import 'package:ezride/Feature/AUTH/Auth_Header.dart';
 import 'package:ezride/Feature/AUTH/Auth_Tabs.dart';
-import 'package:ezride/Feature/AUTH/controller/Auth_controller.dart';
+import 'package:ezride/Feature/AUTH/Auht_Model/Auth_Model.dart';
 import 'package:ezride/flutter_flow/flutter_flow_animations.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -38,12 +41,7 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
 
   void _initializeUseCases() {
     final dio = Dio();
-    final userRepository = ProfileUserRepositoryData(
-      dio: dio,
-      emailJsServiceId: 'tu_service_id',
-      emailJsTemplateId: 'tu_template_id',
-      emailJsPublicKey: 'tu_public_key',
-    );
+    final userRepository = ProfileUserRepositoryData(dio: dio);
     profileUserUseCaseGlobal = ProfileUserUseCaseGlobal(userRepository);
   }
 
@@ -147,94 +145,49 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
   }
 
   // ---------------- REGISTRO ----------------
-void _handleRegister(BuildContext context) async {
-  final email = _model.emailAddressCreateTextController.text.trim();
-  final password = _model.passwordCreateTextController.text.trim();
-  final confirmPassword = _model.passwordConfirmTextController.text.trim();
+  void _handleRegister(BuildContext context) async {
+    final email = _model.emailAddressCreateTextController.text.trim();
+    final password = _model.passwordCreateTextController.text.trim();
+    final confirmPassword = _model.passwordConfirmTextController.text.trim();
 
-  if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-    _showSnackBar(context, 'Por favor completa todos los campos');
-    return;
-  }
+    if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+      _showSnackBar(context, 'Por favor completa todos los campos');
+      return;
+    }
 
-  if (password != confirmPassword) {
-    _showSnackBar(context, 'Las contraseñas no coinciden');
-    return;
-  }
+    if (password != confirmPassword) {
+      _showSnackBar(context, 'Las contraseñas no coinciden');
+      return;
+    }
 
-  if (password.length < 6) {
-    _showSnackBar(context, 'La contraseña debe tener al menos 6 caracteres');
-    return;
-  }
+    if (password.length < 6) {
+      _showSnackBar(context, 'La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
 
-  _showLoadingDialog(context, 'Creando tu cuenta...');
+    _showLoadingDialog(context, 'Creando tu cuenta...');
 
-  try {
-    print('📌 Intentando registrar usuario: $email');
+    try {
+      final profile = await profileUserUseCaseGlobal.register(
+        email: email,
+        password: password,
+      );
 
-    final profile = await profileUserUseCaseGlobal.register(
-      email: email,
-      password: password,
-    );
+      if (!mounted) return;
 
-    print('✅ Registro exitoso: ${profile.id}');
-
-    if (!mounted) return;
-    Navigator.of(context).pop(); // cerrar diálogo de carga
-    _showOtpDialog(context, email);
-  } catch (e, st) {
-    if (mounted) Navigator.of(context).pop();
-    print('❌ Error en _handleRegister: $e');
-    print(st);
-    _showErrorDialog(
-      context,
-      'Error al registrar',
-      e.toString(),
-    );
-  }
-}
-
-
-  // ---------------- OTP ----------------
-  void _showOtpDialog(BuildContext context, String email) {
-    final otpController = TextEditingController();
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Verificación OTP'),
-          content: TextField(
-            controller: otpController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'Ingresa el código OTP',
-            ),
+      // Navegar a la pantalla OTP
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => AuthOtpPage(
+            email: email,
+            profileUserUseCaseGlobal: profileUserUseCaseGlobal,
           ),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                final inputOtp = otpController.text.trim();
-                final isValid =
-                    await profileUserUseCaseGlobal.repository.verifyOtp(
-                  email: email, // << parámetro nombrado
-                  inputOtp: inputOtp, // << parámetro nombrado
-                );
-
-                if (isValid) {
-                  Navigator.of(ctx).pop();
-                  _showSnackBar(context, 'OTP verificado correctamente');
-                  _navigateToAuthComplete(context);
-                } else {
-                  _showSnackBar(context, 'OTP incorrecto');
-                }
-              },
-              child: const Text('Verificar'),
-            ),
-          ],
-        );
-      },
-    );
+        ),
+      );
+    } catch (e) {
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      _showErrorDialog(context, 'Error al registrar', e.toString());
+    }
   }
 
   // ---------------- DIALOGOS ----------------
@@ -310,14 +263,17 @@ void _handleRegister(BuildContext context) async {
     }
   }
 
-  // ---------------- NAVEGACION ----------------
+// ---------------- NAVEGACION ----------------
   void _navigateToAuthComplete(BuildContext context) {
-    try {
-      GoRouter.of(context).go('/main');
-    } catch (e) {
-      print('GoRouter error: $e');
-      Navigator.of(context).pushNamed('/main');
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        // Usamos GoRouter para navegar de manera segura
+        GoRouter.of(context)
+            .go('/main'); // O .push('/main') si quieres mantener el historial
+      } catch (e) {
+        print('GoRouter error: $e');
+      }
+    });
   }
 
   // ---------------- TAB SWITCH ----------------
@@ -350,3 +306,13 @@ void _handleRegister(BuildContext context) async {
     _showSnackBar(context, 'Funcionalidad de recuperación de contraseña');
   }
 }
+
+
+/**
+ * ME genero esto
+ * // ---------------- REGISTRO ----------------
+
+
+ * 
+ * 
+ */

@@ -1,6 +1,10 @@
 import 'dart:io';
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:ezride/Services/render/render_db_client.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../models/Auth/IADocumentAnalisis_Model.dart';
+import 'package:cross_file/cross_file.dart';
 
 class IADocumentDataSourcers {
   final Dio dio;
@@ -47,5 +51,24 @@ class IADocumentDataSourcers {
       'recommendations': data['recommendations'],
       'createdAt': DateTime.now().toIso8601String(),
     });
+  }
+
+  final dataSource = IADocumentDataSourcers(
+    dio: Dio(),
+    endpoint: dotenv.env['AZURE_DOC_ENDPOINT']!,
+    apiKey: dotenv.env['AZURE_DOC_KEY']!,
+  );
+
+  Future<void> uploadDocument(XFile file) async {
+    final result = await dataSource.analyzeDocument(File(file.path));
+    final hash = sha256.convert(await File(file.path).readAsBytes()).toString();
+
+    await RenderDbClient.insertDocument(
+      ocrData: result.toJson(),
+      hash: hash,
+      createdAt: DateTime.now(),
+      sourceType: 'document_front', // o document_back
+      provider: 'AzureDocumentIntelligence',
+    );
   }
 }
