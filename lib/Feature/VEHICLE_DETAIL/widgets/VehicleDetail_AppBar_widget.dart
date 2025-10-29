@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-class AppBarCarDetailwidgets extends StatelessWidget implements PreferredSizeWidget {
+class AppBarCarDetailwidgets extends StatelessWidget
+    implements PreferredSizeWidget {
   const AppBarCarDetailwidgets({
-    Key? key,
+    super.key,
     required this.onBackPressed,
     required this.onFavoritePressed,
     this.isFavorite = false,
@@ -11,9 +12,8 @@ class AppBarCarDetailwidgets extends StatelessWidget implements PreferredSizeWid
     this.backIconColor = Colors.white,
     this.favoriteIconColor = Colors.white,
     this.backButtonColor = Colors.black54,
-    this.favoriteButtonColor = Colors.black54,
-    this.showShadow = true,
-  }) : super(key: key);
+    this.showShadow = false,
+  });
 
   final VoidCallback onBackPressed;
   final VoidCallback onFavoritePressed;
@@ -23,7 +23,6 @@ class AppBarCarDetailwidgets extends StatelessWidget implements PreferredSizeWid
   final Color backIconColor;
   final Color favoriteIconColor;
   final Color backButtonColor;
-  final Color favoriteButtonColor;
   final bool showShadow;
 
   @override
@@ -31,15 +30,22 @@ class AppBarCarDetailwidgets extends StatelessWidget implements PreferredSizeWid
 
   @override
   Widget build(BuildContext context) {
-    return AppBar(
-      backgroundColor: backgroundColor,
-      elevation: elevation,
-      leadingWidth: 56,
-      toolbarHeight: kToolbarHeight,
-      automaticallyImplyLeading: false,
-      title: const SizedBox.shrink(), // Title vacío para centrar contenido
-      centerTitle: true,
-      flexibleSpace: _buildAppBarContent(),
+    return Material(
+      type: MaterialType.transparency, // 👈 elimina el fondo gris por completo
+      child: AppBar(
+        backgroundColor: backgroundColor,
+        elevation: elevation,
+        leadingWidth: 56,
+        toolbarHeight: kToolbarHeight,
+        automaticallyImplyLeading: false,
+        title: const SizedBox.shrink(),
+        centerTitle: true,
+        surfaceTintColor: Colors.transparent, // 👈 evita tintado en Material 3
+        shadowColor: Colors.transparent,
+        flexibleSpace: SafeArea(
+          child: _buildAppBarContent(),
+        ),
+      ),
     );
   }
 
@@ -57,28 +63,16 @@ class AppBarCarDetailwidgets extends StatelessWidget implements PreferredSizeWid
             )
           : null,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Botón de retroceso
+            // 🔙 Botón de retroceso
             _buildIconButton(
               onPressed: onBackPressed,
               icon: Icons.arrow_back_rounded,
               iconColor: backIconColor,
               backgroundColor: backButtonColor,
-            ),
-            
-            // Espacio central (podría usarse para título si se necesita)
-            const Spacer(),
-            
-            // Botón de favoritos
-            _buildIconButton(
-              onPressed: onFavoritePressed,
-              icon: isFavorite ? Icons.favorite : Icons.favorite_border,
-              iconColor: isFavorite ? Colors.red : favoriteIconColor,
-              backgroundColor: favoriteButtonColor,
             ),
           ],
         ),
@@ -100,18 +94,14 @@ class AppBarCarDetailwidgets extends StatelessWidget implements PreferredSizeWid
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withOpacity(0.15),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: IconButton(
-        icon: Icon(
-          icon,
-          color: iconColor,
-          size: 20,
-        ),
+        icon: Icon(icon, color: iconColor, size: 20),
         onPressed: onPressed,
         padding: EdgeInsets.zero,
         splashRadius: 20,

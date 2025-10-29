@@ -13,7 +13,7 @@ class ParallaxProfileHeader extends StatelessWidget {
   final double avatarSize;
 
   const ParallaxProfileHeader({
-    Key? key,
+    super.key,
     required this.backgroundImageUrl,
     required this.profileImageUrl,
     required this.businessName,
@@ -22,7 +22,7 @@ class ParallaxProfileHeader extends StatelessWidget {
     this.height = 250,
     this.parallaxOffset = 0.0,
     this.avatarSize = 80,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -34,13 +34,13 @@ class ParallaxProfileHeader extends StatelessWidget {
         children: [
           // Fondo con imagen - PARALLAX SUAVIZADO
           _buildBackgroundWithParallax(),
-          
+
           // Overlay oscuro (SIN PARALLAX - optimizado)
           _buildDarkOverlay(),
-          
+
           // Contenido (Avatar + Texto) - PARALLAX SUAVIZADO
           _buildProfileContentWithParallax(context),
-          
+
           // Botón de volver (SIN PARALLAX - fijo)
           _buildBackButton(context),
         ],
@@ -81,7 +81,7 @@ class ParallaxProfileHeader extends StatelessWidget {
   Widget _buildProfileContentWithParallax(BuildContext context) {
     // ✅ CALCULO SIMPLIFICADO - menos operaciones matemáticas
     final double contentOffset = (parallaxOffset * 0.5).clamp(-30.0, 0.0);
-    
+
     return Positioned(
       bottom: 20 + contentOffset, // ✅ UN solo cálculo
       left: 16,
@@ -143,14 +143,15 @@ class ParallaxProfileHeader extends StatelessWidget {
                     imageUrl: profileImageUrl,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => _buildAvatarPlaceholder(),
-                    errorWidget: (context, url, error) => _buildAvatarPlaceholder(),
+                    errorWidget: (context, url, error) =>
+                        _buildAvatarPlaceholder(),
                   )
                 : _buildAvatarPlaceholder(),
           ),
         ),
-        
+
         const SizedBox(width: 16),
-        
+
         // Texto
         Expanded(
           child: Column(

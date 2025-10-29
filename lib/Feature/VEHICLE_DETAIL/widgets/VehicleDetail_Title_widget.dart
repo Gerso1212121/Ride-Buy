@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class TitleCarDetailwidgets extends StatelessWidget {
   const TitleCarDetailwidgets({
-    Key? key,
+    super.key,
     required this.title,
     required this.tag,
     required this.year,
@@ -21,7 +21,7 @@ class TitleCarDetailwidgets extends StatelessWidget {
     this.verticalSpacing = 8,
     this.horizontalSpacing = 8,
     this.crossAxisAlignment = CrossAxisAlignment.start,
-  }) : super(key: key);
+  });
 
   final String title;
   final String tag;
@@ -60,9 +60,9 @@ class TitleCarDetailwidgets extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        
+
         SizedBox(height: verticalSpacing),
-        
+
         // Fila con tag y año
         Row(
           mainAxisSize: MainAxisSize.max,
@@ -87,9 +87,9 @@ class TitleCarDetailwidgets extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             SizedBox(width: horizontalSpacing),
-            
+
             // Año del vehículo
             Text(
               '• $year',

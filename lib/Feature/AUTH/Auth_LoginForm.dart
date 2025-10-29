@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:ezride/Feature/AUTH/controller/Auth_controller.dart';
 import 'package:ezride/Feature/AUTH/widget/Auth_CustomButton_widget.dart';
 import 'package:ezride/Feature/AUTH/widget/Auth_CustomTextField_widget.dart';
@@ -51,47 +50,51 @@ class _LoginFormState extends State<LoginForm> {
   void _validateRealTime() {
     if (mounted) {
       setState(() {
-        _isEmailValid = _validateEmail(widget.model.emailAddressTextController.text);
-        _isPasswordValid = _validatePassword(widget.model.passwordTextController.text);
+        _isEmailValid =
+            _validateEmail(widget.model.emailAddressTextController.text);
+        _isPasswordValid =
+            _validatePassword(widget.model.passwordTextController.text);
       });
     }
   }
 
   bool _validateEmail(String value) {
     if (value.isEmpty) return true; // No mostrar error si está vacío
-    
+
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     return emailRegex.hasMatch(value);
   }
 
   bool _validatePassword(String value) {
     if (value.isEmpty) return true; // No mostrar error si está vacío
-    
+
     return value.length >= 6;
   }
 
   Color _getEmailBorderColor(BuildContext context) {
     final text = widget.model.emailAddressTextController.text;
-    
+
     if (text.isEmpty) {
-      return FlutterFlowTheme.of(context).alternate; // Color normal cuando está vacío
+      return FlutterFlowTheme.of(context)
+          .alternate; // Color normal cuando está vacío
     }
-    
-    return _isEmailValid 
+
+    return _isEmailValid
         ? FlutterFlowTheme.of(context).primary // Verde/azul cuando es válido
-        : FlutterFlowTheme.of(context).error;  // Rojo cuando es inválido
+        : FlutterFlowTheme.of(context).error; // Rojo cuando es inválido
   }
 
   Color _getPasswordBorderColor(BuildContext context) {
     final text = widget.model.passwordTextController.text;
-    
+
     if (text.isEmpty) {
-      return FlutterFlowTheme.of(context).alternate; // Color normal cuando está vacío
+      return FlutterFlowTheme.of(context)
+          .alternate; // Color normal cuando está vacío
     }
-    
-    return _isPasswordValid 
+
+    return _isPasswordValid
         ? FlutterFlowTheme.of(context).primary // Verde/azul cuando es válido
-        : FlutterFlowTheme.of(context).error;  // Rojo cuando es inválido
+        : FlutterFlowTheme.of(context).error; // Rojo cuando es inválido
   }
 
   @override
@@ -116,8 +119,11 @@ class _LoginFormState extends State<LoginForm> {
                 autofillHints: const [AutofillHints.email],
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
-                  if (value == null || value.isEmpty) return 'Ingresa tu correo';
-                  final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                  if (value == null || value.isEmpty) {
+                    return 'Ingresa tu correo';
+                  }
+                  final emailRegex =
+                      RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
                   if (!emailRegex.hasMatch(value)) return 'Correo inválido';
                   return null;
                 },
@@ -133,8 +139,12 @@ class _LoginFormState extends State<LoginForm> {
                 autofillHints: const [AutofillHints.password],
                 isPassword: true,
                 validator: (value) {
-                  if (value == null || value.isEmpty) return 'Ingresa tu contraseña';
-                  if (value.length < 6) return 'Esta contraseña ya existe. Intenta con otra.';
+                  if (value == null || value.isEmpty) {
+                    return 'Ingresa tu contraseña';
+                  }
+                  if (value.length < 6) {
+                    return 'Esta contraseña ya existe. Intenta con otra.';
+                  }
                   return null;
                 },
                 borderColor: _getPasswordBorderColor(context),
@@ -210,7 +220,8 @@ class _LoginFormState extends State<LoginForm> {
         Align(
           alignment: const AlignmentDirectional(0.0, 0.0),
           child: Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(16.0, 0.0, 16.0, 24.0),
+            padding:
+                const EdgeInsetsDirectional.fromSTEB(16.0, 0.0, 16.0, 24.0),
             child: GestureDetector(
               onTap: widget.onRegisterLinkPressed,
               child: Text(
@@ -219,7 +230,8 @@ class _LoginFormState extends State<LoginForm> {
                 style: FlutterFlowTheme.of(context).labelMedium.override(
                       font: GoogleFonts.lato(
                         fontWeight: FontWeight.bold,
-                        fontStyle: FlutterFlowTheme.of(context).labelMedium.fontStyle,
+                        fontStyle:
+                            FlutterFlowTheme.of(context).labelMedium.fontStyle,
                       ),
                       color: const Color(0xFF0022FF),
                       letterSpacing: 0.0,

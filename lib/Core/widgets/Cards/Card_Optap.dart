@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class GenericCardGlobalwidgets extends StatelessWidget {
   const GenericCardGlobalwidgets({
-    Key? key,
+    super.key,
     required this.title,
     required this.subtitle,
     required this.icon,
@@ -12,7 +12,7 @@ class GenericCardGlobalwidgets extends StatelessWidget {
     this.iconContainerSize = 48,
     this.iconColor = Colors.white,
     this.iconBackgroundColor = const Color(0xFF2563EB),
-    this.backgroundColor = const Color(0xFFF1F5F9),
+    this.backgroundColor = const Color.fromARGB(255, 255, 255, 255),
     this.borderColor = const Color(0xFFE2E8F0),
     this.borderRadius = 16,
     this.iconBorderRadius = 12,
@@ -26,7 +26,7 @@ class GenericCardGlobalwidgets extends StatelessWidget {
     this.horizontalPadding = 8,
     this.verticalPadding = 12,
     this.onTap,
-  }) : super(key: key);
+  });
 
   final String title;
   final String subtitle;
@@ -90,9 +90,9 @@ class GenericCardGlobalwidgets extends StatelessWidget {
                   size: iconSize,
                 ),
               ),
-              
+
               SizedBox(height: verticalSpacing),
-              
+
               // Title
               Text(
                 title,
@@ -106,9 +106,9 @@ class GenericCardGlobalwidgets extends StatelessWidget {
                   letterSpacing: 0.0,
                 ),
               ),
-              
+
               SizedBox(height: verticalSpacing / 2),
-              
+
               // Subtitle
               Text(
                 subtitle,

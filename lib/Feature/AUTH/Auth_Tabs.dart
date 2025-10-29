@@ -10,13 +10,13 @@ class AuthTabs extends StatelessWidget {
   final AuthModel model;
   final Map<String, AnimationInfo> animationsMap;
   final BuildContext parentContext;
-  
+
   // ✅ Callbacks para LoginForm
   final VoidCallback onSignInPressed;
   final VoidCallback onForgotPasswordPressed;
   final VoidCallback onRegisterLinkPressed;
   final VoidCallback onGoogleAuthLoginPressed;
-  
+
   // ✅ Callbacks para RegisterForm
   final VoidCallback onRegisterPressed;
   final VoidCallback onLoginLinkPressed;
@@ -42,12 +42,12 @@ class AuthTabs extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: 700.0,
-      constraints: BoxConstraints(maxWidth: 602.0),
+      constraints: const BoxConstraints(maxWidth: 602.0),
       decoration: BoxDecoration(
         color: FlutterFlowTheme.of(context).secondaryBackground,
       ),
       child: Padding(
-        padding: EdgeInsetsDirectional.fromSTEB(16.0, 0.0, 16.0, 0.0),
+        padding: const EdgeInsetsDirectional.fromSTEB(16.0, 0.0, 16.0, 0.0),
         child: Column(
           children: [
             _buildTabBar(context),
@@ -56,7 +56,7 @@ class AuthTabs extends StatelessWidget {
                 controller: model.tabBarController,
                 children: [
                   LoginForm(
-                    model: model, 
+                    model: model,
                     animationsMap: animationsMap,
                     parentContext: parentContext,
                     // ✅ Pasar todos los callbacks requeridos
@@ -66,7 +66,7 @@ class AuthTabs extends StatelessWidget {
                     onGoogleAuthPressed: onGoogleAuthLoginPressed,
                   ),
                   RegisterForm(
-                    model: model, 
+                    model: model,
                     animationsMap: animationsMap,
                     parentContext: parentContext,
                     // ✅ Pasar todos los callbacks requeridos
@@ -85,20 +85,23 @@ class AuthTabs extends StatelessWidget {
 
   Widget _buildTabBar(BuildContext context) {
     return Align(
-      alignment: Alignment(-1.0, 0),
+      alignment: const Alignment(-1.0, 0),
       child: TabBar(
         isScrollable: true,
         labelColor: FlutterFlowTheme.of(context).primaryText,
         unselectedLabelColor: FlutterFlowTheme.of(context).secondaryText,
-        labelPadding: EdgeInsets.all(16.0),
+        labelPadding: const EdgeInsets.all(16.0),
         labelStyle: FlutterFlowTheme.of(context).displaySmall.override(
               font: GoogleFonts.lato(
-                fontWeight: FlutterFlowTheme.of(context).displaySmall.fontWeight,
+                fontWeight:
+                    FlutterFlowTheme.of(context).displaySmall.fontWeight,
                 fontStyle: FlutterFlowTheme.of(context).displaySmall.fontStyle,
               ),
               letterSpacing: 0.0,
             ),
-        unselectedLabelStyle: FlutterFlowTheme.of(context).displaySmall.override(
+        unselectedLabelStyle: FlutterFlowTheme.of(context)
+            .displaySmall
+            .override(
               font: GoogleFonts.lato(
                 fontWeight: FontWeight.normal,
                 fontStyle: FlutterFlowTheme.of(context).displaySmall.fontStyle,
@@ -107,8 +110,8 @@ class AuthTabs extends StatelessWidget {
             ),
         indicatorColor: FlutterFlowTheme.of(context).primary,
         indicatorWeight: 4.0,
-        padding: EdgeInsetsDirectional.fromSTEB(0.0, 12.0, 16.0, 12.0),
-        tabs: [
+        padding: const EdgeInsetsDirectional.fromSTEB(0.0, 12.0, 16.0, 12.0),
+        tabs: const [
           Tab(text: 'Inicio Sesión'),
           Tab(text: 'Registro'),
         ],

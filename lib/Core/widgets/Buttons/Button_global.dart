@@ -20,13 +20,14 @@ class CustomButtonWithStates extends StatelessWidget {
   final TextOverflow textOverflow; // ✅ NUEVO PARÁMETRO
 
   const CustomButtonWithStates({
-    Key? key,
+    super.key,
     required this.onPressed,
     required this.text,
     this.icon,
     this.iconSize = 18,
     this.height = 40,
-    this.padding = const EdgeInsets.symmetric(horizontal: 12), // ✅ Reducido padding
+    this.padding =
+        const EdgeInsets.symmetric(horizontal: 12), // ✅ Reducido padding
     this.iconColor = Colors.white,
     this.backgroundColor = Colors.blue,
     this.hoverColor = Colors.blueAccent,
@@ -38,12 +39,12 @@ class CustomButtonWithStates extends StatelessWidget {
     this.expanded = true,
     this.fontWeight = FontWeight.w600,
     this.textOverflow = TextOverflow.ellipsis, // ✅ VALOR POR DEFECTO
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     Widget button = MouseRegion(
       cursor: SystemMouseCursors.click,
       child: AnimatedContainer(
@@ -51,29 +52,29 @@ class CustomButtonWithStates extends StatelessWidget {
         child: ElevatedButton(
           onPressed: onPressed,
           style: ButtonStyle(
-            backgroundColor: MaterialStateProperty.resolveWith<Color>(
-              (Set<MaterialState> states) {
-                if (states.contains(MaterialState.pressed)) {
+            backgroundColor: WidgetStateProperty.resolveWith<Color>(
+              (Set<WidgetState> states) {
+                if (states.contains(WidgetState.pressed)) {
                   return splashColor;
-                } else if (states.contains(MaterialState.hovered)) {
+                } else if (states.contains(WidgetState.hovered)) {
                   return hoverColor;
                 }
-                return backgroundColor == Colors.blue 
-                    ? theme.colorScheme.primary 
+                return backgroundColor == Colors.blue
+                    ? theme.colorScheme.primary
                     : backgroundColor;
               },
             ),
-            elevation: MaterialStateProperty.resolveWith<double>(
-              (Set<MaterialState> states) {
-                if (states.contains(MaterialState.hovered)) {
+            elevation: WidgetStateProperty.resolveWith<double>(
+              (Set<WidgetState> states) {
+                if (states.contains(WidgetState.hovered)) {
                   return hoverElevation;
                 }
                 return elevation;
               },
             ),
-            padding: MaterialStateProperty.all(padding),
-            minimumSize: MaterialStateProperty.all(Size(0, height)),
-            shape: MaterialStateProperty.all(
+            padding: WidgetStateProperty.all(padding),
+            minimumSize: WidgetStateProperty.all(Size(0, height)),
+            shape: WidgetStateProperty.all(
               RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(borderRadius),
               ),
@@ -91,7 +92,8 @@ class CustomButtonWithStates extends StatelessWidget {
                 ),
                 const SizedBox(width: 6), // ✅ Espacio reducido
               ],
-              Flexible( // ✅ ENVOLVER EL TEXTO EN FLEXIBLE
+              Flexible(
+                // ✅ ENVOLVER EL TEXTO EN FLEXIBLE
                 child: Text(
                   text,
                   overflow: textOverflow, // ✅ APLICAR OVERFLOW

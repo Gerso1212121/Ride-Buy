@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class SectionHeaderHomeWidgets extends StatelessWidget {
   const SectionHeaderHomeWidgets({
-    Key? key,
+    super.key,
     required this.title,
     this.actionText = 'View fall',
     this.onActionPressed,
@@ -15,7 +15,7 @@ class SectionHeaderHomeWidgets extends StatelessWidget {
     this.actionFontWeight = FontWeight.w500,
     this.spacing = MainAxisAlignment.spaceBetween,
     this.crossAxisAlignment = CrossAxisAlignment.center,
-  }) : super(key: key);
+  });
 
   final String title;
   final String actionText;
@@ -49,7 +49,7 @@ class SectionHeaderHomeWidgets extends StatelessWidget {
               letterSpacing: 0.0,
             ),
           ),
-          
+
           // Action
           if (actionText.isNotEmpty)
             GestureDetector(

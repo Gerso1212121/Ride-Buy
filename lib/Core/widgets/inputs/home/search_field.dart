@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class SearchTextField extends StatelessWidget {
   const SearchTextField({
-    Key? key,
+    super.key,
     required this.controller,
     this.focusNode,
     this.hintText = 'Search for cars, locations...',
@@ -27,7 +27,7 @@ class SearchTextField extends StatelessWidget {
     this.enabled = true,
     this.keyboardType = TextInputType.text,
     this.textInputAction = TextInputAction.search,
-  }) : super(key: key);
+  });
 
   final TextEditingController controller;
   final FocusNode? focusNode;
@@ -119,10 +119,10 @@ class SearchTextField extends StatelessWidget {
 
   TextStyle _getHintStyle(BuildContext context) {
     return Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: hintColor,
-          fontSize: 16,
-          letterSpacing: 0.0,
-        ) ??
+              color: hintColor,
+              fontSize: 16,
+              letterSpacing: 0.0,
+            ) ??
         const TextStyle(
           color: Color(0xFF94A3B8),
           fontSize: 16,
@@ -132,9 +132,9 @@ class SearchTextField extends StatelessWidget {
 
   TextStyle _getTextStyle(BuildContext context) {
     return Theme.of(context).textTheme.bodyMedium?.copyWith(
-          fontSize: 16,
-          letterSpacing: 0.0,
-        ) ??
+              fontSize: 16,
+              letterSpacing: 0.0,
+            ) ??
         const TextStyle(
           fontSize: 16,
           letterSpacing: 0.0,

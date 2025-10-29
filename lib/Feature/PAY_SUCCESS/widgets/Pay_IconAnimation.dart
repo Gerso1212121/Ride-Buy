@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class SucessPaycWidgets extends StatefulWidget {
   const SucessPaycWidgets({
-    Key? key,
+    super.key,
     required this.title,
     required this.subtitle,
     this.icon = Icons.check_rounded,
@@ -12,7 +12,7 @@ class SucessPaycWidgets extends StatefulWidget {
     this.subtitleColor = const Color(0xFF6B7280),
     this.animationDuration = const Duration(milliseconds: 800),
     this.animationCurve = Curves.elasticOut,
-  }) : super(key: key);
+  });
 
   final String title;
   final String subtitle;
@@ -37,7 +37,7 @@ class _SucessPaycWidgetsState extends State<SucessPaycWidgets>
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       duration: widget.animationDuration,
       vsync: this,
@@ -82,7 +82,7 @@ class _SucessPaycWidgetsState extends State<SucessPaycWidgets>
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const SizedBox(height: 5),
-        
+
         // Círculo con animación
         AnimatedBuilder(
           animation: _animationController,
@@ -101,9 +101,9 @@ class _SucessPaycWidgetsState extends State<SucessPaycWidgets>
             iconColor: widget.iconColor,
           ),
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Título con animación de fade in
         AnimatedBuilder(
           animation: _animationController,
@@ -118,9 +118,9 @@ class _SucessPaycWidgetsState extends State<SucessPaycWidgets>
             titleColor: widget.titleColor,
           ),
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Subtítulo con animación de fade in
         AnimatedBuilder(
           animation: _animationController,

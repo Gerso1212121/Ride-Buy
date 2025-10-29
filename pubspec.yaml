@@ -78,6 +78,8 @@ dependencies:
   dartz: ^0.10.1
   image_picker: ^1.1.2
   app_links: ^6.4.0
+  camera: 0.10.0+4
+  postgres: ^3.4.8
 
 dependency_overrides:
   http: 1.4.0

@@ -1,6 +1,6 @@
 import 'package:ezride/Core/enums/enums.dart';
 
-class DocumentoEntity {
+class Documento {
   final String id;
   final DocumentoScope scope;
   final String? empresaId;
@@ -18,7 +18,7 @@ class DocumentoEntity {
   final String? createdBy;
   final DateTime createdAt;
 
-  DocumentoEntity({
+  Documento({
     required this.id,
     required this.scope,
     this.empresaId,

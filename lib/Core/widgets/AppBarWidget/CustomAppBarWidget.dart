@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   const CustomAppBar({
-    Key? key,
-    this.backgroundColor = const Color(0xFFF8FAFC),
+    super.key,
+    this.backgroundColor = Colors.white,
     this.automaticallyImplyLeading = false,
     this.title = 'RIDE & BUY',
     this.logoIcon = Icons.directions_car,
@@ -17,7 +17,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onMenuPressed,
     this.elevation = 0,
     this.centerTitle = false,
-  }) : super(key: key);
+  });
 
   final Color backgroundColor;
   final bool automaticallyImplyLeading;
@@ -84,6 +84,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: _buildActions(),
       centerTitle: centerTitle,
       elevation: elevation,
+      // ↓↓↓↓ ESTAS SON LAS PROPIEDADES CLAVE PARA BLOQUEAR EL COLOR ↓↓↓↓
+      scrolledUnderElevation: 0, // Elimina la sombra al scrollear
+      surfaceTintColor: Colors.transparent, // Elimina el tinte automático
+      shadowColor: Colors.transparent, // Sin sombras
+      foregroundColor: Colors.transparent, // Sin efectos de overlay
+      // ↑↑↑↑ ESTAS SON LAS PROPIEDADES CLAVE PARA BLOQUEAR EL COLOR ↑↑↑↑
     );
   }
 
@@ -97,9 +103,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         actionButtons.add(
           _buildActionButton(
             icon: Icons.notifications_outlined,
-            onPressed: onNotificationsPressed ?? () {
-              print('Notifications button pressed ...');
-            },
+            onPressed: onNotificationsPressed ??
+                () {
+                  print('Notifications button pressed ...');
+                },
           ),
         );
       }

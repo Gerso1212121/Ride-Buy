@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+import 'package:ezride/Core/enums/enums.dart';
 import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
 import 'package:ezride/Feature/AUTH/Auth_Header.dart';
 import 'package:ezride/Feature/AUTH/Auth_Tabs.dart';
@@ -7,10 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 // Agrega estos imports
-import '../../../DOMAIN/usecases/Auth/Login_UseCases.dart';
-import '../../../DOMAIN/usecases/Auth/Register_UseCases.dart';
+import '../../../DOMAIN/usecases/Auth/Auth_UseCase.dart';
 import '../../../DATA/repositories/Auth/ProfileUser_RepositoryData.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -23,11 +23,10 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
   late AuthModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
   final animationsMap = <String, AnimationInfo>{};
-  bool _isLoading = false;
+  final bool _isLoading = false;
 
   // ✅ INICIALIZAR CASOS DE USO
-  late final LoginUseCases loginUserUseCase;
-  late final RegisterUseCases registerUserUseCase;
+  late final ProfileUserUseCaseGlobal profileUserUseCaseGlobal;
 
   @override
   void initState() {
@@ -38,10 +37,14 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
   }
 
   void _initializeUseCases() {
-    final supabaseClient = Supabase.instance.client;
-    final userRepository = ProfileUserRepositoryData(supabaseClient);
-    loginUserUseCase = LoginUseCases(userRepository);
-    registerUserUseCase = RegisterUseCases(userRepository);
+    final dio = Dio();
+    final userRepository = ProfileUserRepositoryData(
+      dio: dio,
+      emailJsServiceId: 'tu_service_id',
+      emailJsTemplateId: 'tu_template_id',
+      emailJsPublicKey: 'tu_public_key',
+    );
+    profileUserUseCaseGlobal = ProfileUserUseCaseGlobal(userRepository);
   }
 
   void _initializeTabController() {
@@ -93,7 +96,7 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
           mainAxisSize: MainAxisSize.max,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AuthHeader(),
+            const AuthHeader(),
             AuthTabs(
               model: _model,
               animationsMap: animationsMap,
@@ -113,48 +116,54 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
     );
   }
 
-void _handleSignIn(BuildContext context) async {
-  final email = _model.emailAddressTextController.text.trim();
-  final password = _model.passwordTextController.text.trim();
+  // ---------------- LOGIN ----------------
+  void _handleSignIn(BuildContext context) async {
+    final email = _model.emailAddressTextController.text.trim();
+    final password = _model.passwordTextController.text.trim();
 
-  if (email.isEmpty || password.isEmpty) {
-    _showSnackBar(context, 'Por favor completa todos los campos');
-    return;
+    if (email.isEmpty || password.isEmpty) {
+      _showSnackBar(context, 'Por favor completa todos los campos');
+      return;
+    }
+
+    _showLoadingDialog(context, 'Iniciando sesión...');
+
+    try {
+      final profile = await profileUserUseCaseGlobal.login(
+        email: email,
+        password: password,
+      );
+
+      if (mounted) Navigator.of(context).pop();
+
+      // 🔒 Control de verificación
+      if (profile.verificationStatus != VerificationStatus.verificado) {
+        _showSnackBar(context, 'Completa la verificación de identidad');
+        GoRouter.of(context).push('/capture_verification', extra: {
+          'perfilId': profile.id,
+          'type': 'dui_front',
+        });
+        return;
+      }
+
+      // ✅ Si está verificado, ir al flujo final
+      _navigateToAuthComplete(context);
+    } catch (e) {
+      if (mounted) Navigator.of(context).pop();
+      _showErrorDialog(
+        context,
+        'Error al iniciar sesión',
+        _getErrorMessage(e),
+      );
+    }
   }
 
-  // Mostrar diálogo de carga
-  _showLoadingDialog(context, 'Iniciando sesión...');
-
-  try {
-    final profile = await loginUserUseCase(
-      email: email,
-      password: password,
-    );
-
-    // Cerrar diálogo de carga
-    if (mounted) Navigator.of(context).pop();
-
-    _navigateToAuthComplete(context);
-  } catch (e) {
-    // Cerrar diálogo de carga
-    if (mounted) Navigator.of(context).pop();
-
-    _showErrorDialog(
-      context,
-      'Error al iniciar sesión',
-      _getErrorMessage(e),
-    );
-  }
-}
-
+  // ---------------- REGISTRO ----------------
   void _handleRegister(BuildContext context) async {
-    final email = _model.emailAddressCreateTextController.text;
-    final password = _model.passwordCreateTextController.text;
-    final confirmPassword = _model.passwordConfirmTextController.text;
+    final email = _model.emailAddressCreateTextController.text.trim();
+    final password = _model.passwordCreateTextController.text.trim();
+    final confirmPassword = _model.passwordConfirmTextController.text.trim();
 
-    print('Register attempt with: $email');
-
-    // Validaciones
     if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       _showSnackBar(context, 'Por favor completa todos los campos');
       return;
@@ -170,95 +179,116 @@ void _handleSignIn(BuildContext context) async {
       return;
     }
 
-    // Mostrar diálogo de carga
     _showLoadingDialog(context, 'Creando tu cuenta...');
 
     try {
-      // ✅ USAR CASO DE USO PARA REGISTRO
-      final profile = await registerUserUseCase(
+      print('📌 Intentando registrar usuario: $email');
+
+      final profile = await profileUserUseCaseGlobal.register(
         email: email,
         password: password,
       );
 
-      // Cerrar diálogo de carga
-      if (mounted) Navigator.of(context).pop();
+      print('✅ Registro exitoso: ${profile.id}');
 
-      // Mostrar diálogo de éxito
-      _showSuccessDialog(
-        context,
-        '¡Registro exitoso!',
-        'Tu cuenta ha sido creada correctamente. Bienvenido ${profile.displayName}',
-        () => _navigateToAuthComplete(context),
-      );
-    } catch (e) {
-      // Cerrar diálogo de carga
+      if (!mounted) return;
+      Navigator.of(context).pop(); // cerrar diálogo de carga
+      _showOtpDialog(context, email);
+    } catch (e, st) {
       if (mounted) Navigator.of(context).pop();
-
-      // Mostrar diálogo de error
+      print('❌ Error en _handleRegister: $e');
+      print(st);
       _showErrorDialog(
         context,
         'Error al registrar',
-        _getErrorMessage(e),
+        e.toString(),
       );
     }
   }
 
-  // ✅ FUNCIONES AUXILIARES PARA DIÁLOGOS
-
-void _showLoadingDialog(BuildContext context, String message) {
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (BuildContext context) {
-      return Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: EdgeInsets.zero,
-        child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.5), // Fondo semitransparente
-          ),
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(width: 20),
-                  Text(message),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    },
-  );
-}
-
-  void _showSuccessDialog(
-      BuildContext context, String title, String message, VoidCallback onOk) {
+  // ---------------- OTP ----------------
+  void _showOtpDialog(BuildContext context, String email) {
+    final otpController = TextEditingController();
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      barrierDismissible: false,
+      builder: (ctx) {
         return AlertDialog(
-          title: Text(title),
-          content: Text(message),
+          title: const Text('Verificación OTP'),
+          content: TextField(
+            controller: otpController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Ingresa el código OTP',
+            ),
+          ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                onOk();
+              onPressed: () async {
+                final inputOtp = otpController.text.trim();
+
+                final isValid =
+                    await profileUserUseCaseGlobal.repository.verifyOtp(
+                  email: email,
+                  inputOtp: inputOtp,
+                );
+
+                if (isValid) {
+                  Navigator.of(ctx).pop();
+                  _showSnackBar(context, 'OTP verificado correctamente');
+
+                  // ✅ Redirigir a la verificación de identidad
+                  Future.delayed(const Duration(milliseconds: 400), () {
+                    GoRouter.of(context).push('/capture_verification', extra: {
+                      'perfilId': email, // o el ID del perfil si ya lo tenés
+                      'type': 'dui_front'
+                    });
+                  });
+                } else {
+                  _showSnackBar(context, 'OTP incorrecto');
+                }
               },
-              child: const Text('Continuar'),
+              child: const Text('Verificar'),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  // ---------------- DIALOGOS ----------------
+  void _showLoadingDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.zero,
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.5),
+            ),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(width: 20),
+                    Text(message),
+                  ],
+                ),
+              ),
+            ),
+          ),
         );
       },
     );
@@ -299,33 +329,7 @@ void _showLoadingDialog(BuildContext context, String message) {
     }
   }
 
-  // ✅ FUNCIONES EXISTENTES (sin cambios)
-
-  void _handleForgotPassword(BuildContext context) {
-    print('Navigate to forgot password page');
-    _showSnackBar(context, 'Funcionalidad de recuperación de contraseña');
-  }
-
-  void _switchToRegisterTab() {
-    print('Switch to register tab');
-    _model.tabBarController?.animateTo(1);
-  }
-
-  void _handleGoogleAuthLogin(BuildContext context) {
-    print('Google Auth for Login');
-    _showSnackBar(context, 'Iniciando sesión con Google');
-  }
-
-  void _switchToLoginTab() {
-    print('Switch to login tab');
-    _model.tabBarController?.animateTo(0);
-  }
-
-  void _handleGoogleAuthRegister(BuildContext context) {
-    print('Google Auth for Register');
-    _showSnackBar(context, 'Registrando con Google');
-  }
-
+  // ---------------- NAVEGACION ----------------
   void _navigateToAuthComplete(BuildContext context) {
     try {
       GoRouter.of(context).go('/main');
@@ -335,12 +339,33 @@ void _showLoadingDialog(BuildContext context, String message) {
     }
   }
 
+  // ---------------- TAB SWITCH ----------------
+  void _switchToRegisterTab() {
+    _model.tabBarController?.animateTo(1);
+  }
+
+  void _switchToLoginTab() {
+    _model.tabBarController?.animateTo(0);
+  }
+
+  // ---------------- SNACKBAR ----------------
   void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-      ),
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
+  }
+
+  // ---------------- GOOGLE AUTH ----------------
+  void _handleGoogleAuthLogin(BuildContext context) {
+    _showSnackBar(context, 'Iniciando sesión con Google');
+  }
+
+  void _handleGoogleAuthRegister(BuildContext context) {
+    _showSnackBar(context, 'Registrando con Google');
+  }
+
+  // ---------------- FORGOT PASSWORD ----------------
+  void _handleForgotPassword(BuildContext context) {
+    _showSnackBar(context, 'Funcionalidad de recuperación de contraseña');
   }
 }

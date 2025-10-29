@@ -14,9 +14,9 @@ class SocialAuthButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: AlignmentDirectional(0.0, 0.0),
+      alignment: const AlignmentDirectional(0.0, 0.0),
       child: Padding(
-        padding: EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 16.0),
+        padding: const EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 16.0),
         child: Wrap(
           spacing: 16.0,
           runSpacing: 0.0,
@@ -25,7 +25,7 @@ class SocialAuthButtons extends StatelessWidget {
           children: [
             CustomButton(
               text: 'Continuar con Google',
-              icon: FaIcon(FontAwesomeIcons.google, size: 20.0),
+              icon: const FaIcon(FontAwesomeIcons.google, size: 20.0),
               onPressed: onGoogleAuthPressed, // ✅ Usar callback recibido
               backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
               textColor: FlutterFlowTheme.of(context).bodyMedium.color,

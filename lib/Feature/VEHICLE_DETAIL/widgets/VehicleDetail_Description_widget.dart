@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class DescriptionCarDetailWidgets extends StatefulWidget {
   const DescriptionCarDetailWidgets({
-    Key? key,
+    super.key,
     required this.title,
     required this.content,
     this.initiallyExpanded = false,
@@ -20,7 +20,7 @@ class DescriptionCarDetailWidgets extends StatefulWidget {
     this.borderRadius = 12,
     this.elevation = 0,
     this.showCard = false,
-  }) : super(key: key);
+  });
 
   final String title;
   final String content;
@@ -41,10 +41,12 @@ class DescriptionCarDetailWidgets extends StatefulWidget {
   final bool showCard;
 
   @override
-  State<DescriptionCarDetailWidgets> createState() => _DescriptionCarDetailWidgetsState();
+  State<DescriptionCarDetailWidgets> createState() =>
+      _DescriptionCarDetailWidgetsState();
 }
 
-class _DescriptionCarDetailWidgetsState extends State<DescriptionCarDetailWidgets> 
+class _DescriptionCarDetailWidgetsState
+    extends State<DescriptionCarDetailWidgets>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
@@ -54,17 +56,17 @@ class _DescriptionCarDetailWidgetsState extends State<DescriptionCarDetailWidget
   void initState() {
     super.initState();
     _isExpanded = widget.initiallyExpanded;
-    
+
     _controller = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
+
     _animation = CurvedAnimation(
       parent: _controller,
       curve: Curves.easeInOut,
     );
-    
+
     if (_isExpanded) {
       _controller.value = 1.0;
     }
@@ -135,7 +137,7 @@ class _DescriptionCarDetailWidgetsState extends State<DescriptionCarDetailWidget
               ],
             ),
           ),
-          
+
           // Contenido animado
           SizeTransition(
             sizeFactor: _animation,
@@ -157,9 +159,11 @@ class _DescriptionCarDetailWidgetsState extends State<DescriptionCarDetailWidget
       ),
     );
 
-    return widget.showCard ? content : Container(
-      color: widget.backgroundColor,
-      child: content,
-    );
+    return widget.showCard
+        ? content
+        : Container(
+            color: widget.backgroundColor,
+            child: content,
+          );
   }
 }

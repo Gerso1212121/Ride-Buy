@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class PrimaryButtonPaycWidgets extends StatelessWidget {
   const PrimaryButtonPaycWidgets({
-    Key? key,
+    super.key,
     required this.onPressed,
     required this.text,
     this.width = double.infinity,
@@ -12,7 +12,7 @@ class PrimaryButtonPaycWidgets extends StatelessWidget {
     this.borderRadius = 12,
     this.isLoading = false,
     this.enabled = true,
-  }) : super(key: key);
+  });
 
   final VoidCallback onPressed;
   final String text;

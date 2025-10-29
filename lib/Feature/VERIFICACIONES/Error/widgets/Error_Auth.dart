@@ -1,10 +1,8 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 
 class PantallaErrorVerificacionWidget extends StatefulWidget {
   const PantallaErrorVerificacionWidget({
@@ -12,7 +10,8 @@ class PantallaErrorVerificacionWidget extends StatefulWidget {
     required this.onReintentarPressed,
     required this.onSolicitarLinkPressed,
     this.title = 'Error en la verificación',
-    this.description = 'No pudimos verificar tus datos. Revisa la información o solicita un nuevo link al correo.',
+    this.description =
+        'No pudimos verificar tus datos. Revisa la información o solicita un nuevo link al correo.',
     this.reintentarText = 'Reintentar',
     this.solicitarLinkText = 'Solicitar nuevo link al correo',
   });
@@ -34,7 +33,6 @@ class PantallaErrorVerificacionWidget extends StatefulWidget {
 
 class _PantallaErrorVerificacionWidgetState
     extends State<PantallaErrorVerificacionWidget> {
-
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -56,7 +54,7 @@ class _PantallaErrorVerificacionWidgetState
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: Color(0xFFF8F9FA),
+        backgroundColor: const Color(0xFFF8F9FA),
         appBar: AppBar(
           backgroundColor: Colors.white,
           automaticallyImplyLeading: false,
@@ -72,14 +70,14 @@ class _PantallaErrorVerificacionWidgetState
               ),
             ],
           ),
-          actions: [],
+          actions: const [],
           centerTitle: true,
           elevation: 2,
         ),
         body: SafeArea(
           top: true,
           child: Padding(
-            padding: EdgeInsetsDirectional.fromSTEB(24, 0, 24, 0),
+            padding: const EdgeInsetsDirectional.fromSTEB(24, 0, 24, 0),
             child: Column(
               mainAxisSize: MainAxisSize.max,
               mainAxisAlignment: MainAxisAlignment.center,
@@ -88,7 +86,7 @@ class _PantallaErrorVerificacionWidgetState
                 Container(
                   width: 120,
                   height: 120,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: Color(0xFFEF5350),
                     boxShadow: [
                       BoxShadow(
@@ -102,7 +100,7 @@ class _PantallaErrorVerificacionWidgetState
                     ],
                     shape: BoxShape.circle,
                   ),
-                  child: Align(
+                  child: const Align(
                     alignment: AlignmentDirectional(0, 0),
                     child: Icon(
                       Icons.close_rounded,
@@ -126,7 +124,7 @@ class _PantallaErrorVerificacionWidgetState
                                       .headlineMedium
                                       .fontStyle,
                                 ),
-                                color: Color(0xFF1C1B1F),
+                                color: const Color(0xFF1C1B1F),
                                 letterSpacing: 0.0,
                                 fontWeight: FontWeight.w600,
                                 fontStyle: FlutterFlowTheme.of(context)
@@ -135,7 +133,8 @@ class _PantallaErrorVerificacionWidgetState
                               ),
                     ),
                     Padding(
-                      padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 0),
+                      padding:
+                          const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 0),
                       child: Text(
                         widget.description,
                         textAlign: TextAlign.center,
@@ -148,7 +147,7 @@ class _PantallaErrorVerificacionWidgetState
                                     .bodyMedium
                                     .fontStyle,
                               ),
-                              color: Color(0xFF49454F),
+                              color: const Color(0xFF49454F),
                               letterSpacing: 0.0,
                               fontWeight: FlutterFlowTheme.of(context)
                                   .bodyMedium
@@ -160,28 +159,29 @@ class _PantallaErrorVerificacionWidgetState
                             ),
                       ),
                     ),
-                  ].divide(SizedBox(height: 16)),
+                  ].divide(const SizedBox(height: 16)),
                 ),
                 Padding(
-                  padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 0),
+                  padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 0),
                   child: Column(
                     mainAxisSize: MainAxisSize.max,
                     children: [
                       FFButtonWidget(
                         onPressed: widget.onReintentarPressed,
                         text: widget.reintentarText,
-                        icon: Icon(
+                        icon: const Icon(
                           Icons.refresh_rounded,
                           size: 20,
                         ),
                         options: FFButtonOptions(
                           width: double.infinity,
                           height: 56,
-                          padding: EdgeInsetsDirectional.fromSTEB(32, 0, 32, 0),
+                          padding: const EdgeInsetsDirectional.fromSTEB(
+                              32, 0, 32, 0),
                           iconPadding:
-                              EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
+                              const EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
                           iconColor: Colors.white,
-                          color: Color(0xFFEF5350),
+                          color: const Color(0xFFEF5350),
                           textStyle:
                               FlutterFlowTheme.of(context).titleMedium.override(
                                     font: GoogleFonts.lato(
@@ -198,7 +198,7 @@ class _PantallaErrorVerificacionWidgetState
                                         .fontStyle,
                                   ),
                           elevation: 2,
-                          borderSide: BorderSide(
+                          borderSide: const BorderSide(
                             color: Colors.transparent,
                           ),
                           borderRadius: BorderRadius.circular(12),
@@ -210,9 +210,10 @@ class _PantallaErrorVerificacionWidgetState
                         options: FFButtonOptions(
                           width: double.infinity,
                           height: 48,
-                          padding: EdgeInsetsDirectional.fromSTEB(32, 0, 32, 0),
+                          padding: const EdgeInsetsDirectional.fromSTEB(
+                              32, 0, 32, 0),
                           iconPadding:
-                              EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
+                              const EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
                           color: Colors.transparent,
                           textStyle:
                               FlutterFlowTheme.of(context).titleMedium.override(
@@ -222,7 +223,7 @@ class _PantallaErrorVerificacionWidgetState
                                           .titleMedium
                                           .fontStyle,
                                     ),
-                                    color: Color(0xFF4C84FF),
+                                    color: const Color(0xFF4C84FF),
                                     letterSpacing: 0.0,
                                     fontWeight: FontWeight.w500,
                                     fontStyle: FlutterFlowTheme.of(context)
@@ -230,35 +231,35 @@ class _PantallaErrorVerificacionWidgetState
                                         .fontStyle,
                                   ),
                           elevation: 0,
-                          borderSide: BorderSide(
+                          borderSide: const BorderSide(
                             color: Colors.transparent,
                           ),
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                    ].divide(SizedBox(height: 16)),
+                    ].divide(const SizedBox(height: 16)),
                   ),
                 ),
                 Align(
-                  alignment: AlignmentDirectional(0, 1),
+                  alignment: const AlignmentDirectional(0, 1),
                   child: Padding(
-                    padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 0),
+                    padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 0),
                     child: Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: Color(0xFFF3E5F5),
+                        color: const Color(0xFFF3E5F5),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: Color(0xFFE1BEE7),
+                          color: const Color(0xFFE1BEE7),
                           width: 1,
                         ),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(12),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.help_outline_rounded,
                               color: Color(0xFF7B1FA2),
                               size: 20,
@@ -280,7 +281,7 @@ class _PantallaErrorVerificacionWidgetState
                                                     .labelMedium
                                                     .fontStyle,
                                           ),
-                                          color: Color(0xFF7B1FA2),
+                                          color: const Color(0xFF7B1FA2),
                                           letterSpacing: 0.0,
                                           fontWeight: FontWeight.w600,
                                           fontStyle:
@@ -290,8 +291,9 @@ class _PantallaErrorVerificacionWidgetState
                                         ),
                                   ),
                                   Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
-                                        0, 4, 0, 0),
+                                    padding:
+                                        const EdgeInsetsDirectional.fromSTEB(
+                                            0, 4, 0, 0),
                                     child: Text(
                                       'Si el problema persiste, contacta soporte',
                                       style: FlutterFlowTheme.of(context)
@@ -307,7 +309,7 @@ class _PantallaErrorVerificacionWidgetState
                                                       .bodySmall
                                                       .fontStyle,
                                             ),
-                                            color: Color(0xFF49454F),
+                                            color: const Color(0xFF49454F),
                                             letterSpacing: 0.0,
                                             fontWeight:
                                                 FlutterFlowTheme.of(context)
@@ -324,13 +326,13 @@ class _PantallaErrorVerificacionWidgetState
                                 ],
                               ),
                             ),
-                          ].divide(SizedBox(width: 12)),
+                          ].divide(const SizedBox(width: 12)),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ].divide(SizedBox(height: 24)),
+              ].divide(const SizedBox(height: 24)),
             ),
           ),
         ),

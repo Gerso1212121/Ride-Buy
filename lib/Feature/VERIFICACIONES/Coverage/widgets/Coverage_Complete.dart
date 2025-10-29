@@ -1,17 +1,16 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 
 class VerificacionCompletaWidget extends StatefulWidget {
   const VerificacionCompletaWidget({
     super.key,
     required this.onContinuePressed,
     this.title = '¡Verificación completada!',
-    this.description = 'Tu cuenta ha sido verificada exitosamente. Ya puedes disfrutar de nuestros servicios de renta de autos.',
+    this.description =
+        'Tu cuenta ha sido verificada exitosamente. Ya puedes disfrutar de nuestros servicios de renta de autos.',
     this.buttonText = 'Continuar',
   });
 
@@ -30,7 +29,6 @@ class VerificacionCompletaWidget extends StatefulWidget {
 
 class _VerificacionCompletaWidgetState
     extends State<VerificacionCompletaWidget> {
-
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -56,7 +54,7 @@ class _VerificacionCompletaWidgetState
         body: SafeArea(
           top: true,
           child: Padding(
-            padding: EdgeInsetsDirectional.fromSTEB(24, 40, 24, 32),
+            padding: const EdgeInsetsDirectional.fromSTEB(24, 40, 24, 32),
             child: Column(
               mainAxisSize: MainAxisSize.max,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -75,12 +73,12 @@ class _VerificacionCompletaWidgetState
                           Container(
                             width: 120,
                             height: 120,
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               color: Color(0xFFE8F5E8),
                               shape: BoxShape.circle,
                             ),
                             child: Align(
-                              alignment: AlignmentDirectional(0, 0),
+                              alignment: const AlignmentDirectional(0, 0),
                               child: Container(
                                 width: 80,
                                 height: 80,
@@ -88,7 +86,7 @@ class _VerificacionCompletaWidgetState
                                   color: FlutterFlowTheme.of(context).success,
                                   shape: BoxShape.circle,
                                 ),
-                                child: Align(
+                                child: const Align(
                                   alignment: AlignmentDirectional(0, 0),
                                   child: Icon(
                                     Icons.check_rounded,
@@ -126,7 +124,7 @@ class _VerificacionCompletaWidgetState
                                     ),
                               ),
                               Padding(
-                                padding: EdgeInsetsDirectional.fromSTEB(
+                                padding: const EdgeInsetsDirectional.fromSTEB(
                                     16, 0, 16, 0),
                                 child: Text(
                                   widget.description,
@@ -158,11 +156,11 @@ class _VerificacionCompletaWidgetState
                                       ),
                                 ),
                               ),
-                            ].divide(SizedBox(height: 16)),
+                            ].divide(const SizedBox(height: 16)),
                           ),
-                        ].divide(SizedBox(height: 24)),
+                        ].divide(const SizedBox(height: 24)),
                       ),
-                    ].divide(SizedBox(height: 32)),
+                    ].divide(const SizedBox(height: 32)),
                   ),
                 ),
                 Column(
@@ -178,7 +176,7 @@ class _VerificacionCompletaWidgetState
                                   .bodyMedium
                                   .fontStyle,
                             ),
-                            color: Color(0xFF4C84FF),
+                            color: const Color(0xFF4C84FF),
                             fontSize: 16,
                             letterSpacing: 0.0,
                             fontWeight: FontWeight.w600,
@@ -193,9 +191,11 @@ class _VerificacionCompletaWidgetState
                       options: FFButtonOptions(
                         width: double.infinity,
                         height: 56,
-                        padding: EdgeInsetsDirectional.fromSTEB(32, 0, 32, 0),
-                        iconPadding: EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
-                        color: Color(0xFF4C84FF),
+                        padding:
+                            const EdgeInsetsDirectional.fromSTEB(32, 0, 32, 0),
+                        iconPadding:
+                            const EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
+                        color: const Color(0xFF4C84FF),
                         textStyle:
                             FlutterFlowTheme.of(context).titleMedium.override(
                                   font: GoogleFonts.lato(
@@ -213,13 +213,13 @@ class _VerificacionCompletaWidgetState
                                       .fontStyle,
                                 ),
                         elevation: 0,
-                        borderSide: BorderSide(
+                        borderSide: const BorderSide(
                           color: Colors.transparent,
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                  ].divide(SizedBox(height: 24)),
+                  ].divide(const SizedBox(height: 24)),
                 ),
               ],
             ),

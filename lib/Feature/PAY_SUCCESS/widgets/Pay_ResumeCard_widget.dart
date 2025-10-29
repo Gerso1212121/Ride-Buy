@@ -3,7 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 class ResumeCardPaycWidgets extends StatelessWidget {
   const ResumeCardPaycWidgets({
-    Key? key,
+    super.key,
     required this.vehicleImageUrl,
     required this.vehicleName,
     required this.vehicleType,
@@ -51,7 +51,7 @@ class ResumeCardPaycWidgets extends StatelessWidget {
     this.shadowColor = const Color(0x1A000000),
     this.shadowBlurRadius = 10,
     this.shadowOffset = const Offset(0, 2),
-  }) : super(key: key);
+  });
 
   final String vehicleImageUrl;
   final String vehicleName;
@@ -103,8 +103,9 @@ class ResumeCardPaycWidgets extends StatelessWidget {
 
   // Método factory para crear instancia con datos de muestra
   factory ResumeCardPaycWidgets.sample() {
-    return ResumeCardPaycWidgets(
-      vehicleImageUrl: 'https://images.unsplash.com/photo-1555215695-3004980ad54e',
+    return const ResumeCardPaycWidgets(
+      vehicleImageUrl:
+          'https://images.unsplash.com/photo-1555215695-3004980ad54e',
       vehicleName: 'BMW Serie 3 2024',
       vehicleType: 'Sedán Premium',
       startDate: '15 Dic 2024, 10:00 AM',
@@ -142,34 +143,34 @@ class ResumeCardPaycWidgets extends StatelessWidget {
             children: [
               // Título
               _buildTitle(),
-              
+
               SizedBox(height: verticalSpacing),
-              
+
               // Información del vehículo
               _buildVehicleInfo(),
-              
+
               SizedBox(height: verticalSpacing),
-              
+
               // Divider
               _buildDivider(),
-              
+
               SizedBox(height: verticalSpacing),
-              
+
               // Información de fechas y duración
               _buildDateInfo(),
-              
+
               SizedBox(height: verticalSpacing),
-              
+
               // Divider
               _buildDivider(),
-              
+
               SizedBox(height: verticalSpacing),
-              
+
               // Método de pago
               _buildPaymentMethod(),
-              
+
               SizedBox(height: verticalSpacing),
-              
+
               // Total
               _buildTotal(),
             ],
@@ -219,9 +220,9 @@ class ResumeCardPaycWidgets extends StatelessWidget {
             ),
           ),
         ),
-        
+
         SizedBox(width: horizontalSpacing),
-        
+
         // Información del vehículo - USANDO EXPANDED
         Expanded(
           child: Column(
@@ -237,7 +238,8 @@ class ResumeCardPaycWidgets extends StatelessWidget {
                   letterSpacing: 0.0,
                 ),
                 maxLines: 2, // Permitir máximo 2 líneas
-                overflow: TextOverflow.ellipsis, // Puntos suspensivos si es muy largo
+                overflow:
+                    TextOverflow.ellipsis, // Puntos suspensivos si es muy largo
               ),
               const SizedBox(height: 4),
               Text(

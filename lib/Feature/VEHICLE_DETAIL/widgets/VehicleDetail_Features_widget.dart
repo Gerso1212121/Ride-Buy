@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class FeaturesCarDetailWidgets extends StatefulWidget {
   const FeaturesCarDetailWidgets({
-    Key? key,
+    super.key,
     required this.title,
     required this.features,
     this.initiallyExpanded = false,
@@ -21,8 +21,9 @@ class FeaturesCarDetailWidgets extends StatefulWidget {
     this.borderRadius = 12,
     this.elevation = 0,
     this.showCard = false,
-    this.maxVisibleFeatures = 3, // Número de features visibles cuando está contraído
-  }) : super(key: key);
+    this.maxVisibleFeatures =
+        3, // Número de features visibles cuando está contraído
+  });
 
   final String title;
   final List<String> features;
@@ -45,10 +46,11 @@ class FeaturesCarDetailWidgets extends StatefulWidget {
   final int maxVisibleFeatures;
 
   @override
-  State<FeaturesCarDetailWidgets> createState() => _FeaturesCarDetailWidgetsState();
+  State<FeaturesCarDetailWidgets> createState() =>
+      _FeaturesCarDetailWidgetsState();
 }
 
-class _FeaturesCarDetailWidgetsState extends State<FeaturesCarDetailWidgets> 
+class _FeaturesCarDetailWidgetsState extends State<FeaturesCarDetailWidgets>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
@@ -58,17 +60,17 @@ class _FeaturesCarDetailWidgetsState extends State<FeaturesCarDetailWidgets>
   void initState() {
     super.initState();
     _isExpanded = widget.initiallyExpanded;
-    
+
     _controller = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
+
     _animation = CurvedAnimation(
       parent: _controller,
       curve: Curves.easeInOut,
     );
-    
+
     if (_isExpanded) {
       _controller.value = 1.0;
     }
@@ -93,8 +95,8 @@ class _FeaturesCarDetailWidgetsState extends State<FeaturesCarDetailWidgets>
 
   @override
   Widget build(BuildContext context) {
-    final visibleFeatures = _isExpanded 
-        ? widget.features 
+    final visibleFeatures = _isExpanded
+        ? widget.features
         : widget.features.take(widget.maxVisibleFeatures).toList();
 
     final content = Container(
@@ -143,9 +145,9 @@ class _FeaturesCarDetailWidgetsState extends State<FeaturesCarDetailWidgets>
               ],
             ),
           ),
-          
+
           SizedBox(height: widget.verticalSpacing),
-          
+
           // Lista de características animada
           SizeTransition(
             sizeFactor: _animation,
@@ -154,9 +156,10 @@ class _FeaturesCarDetailWidgetsState extends State<FeaturesCarDetailWidgets>
               children: [
                 // Features visibles
                 ..._buildFeatureList(visibleFeatures),
-                
+
                 // Indicador de features adicionales (cuando está contraído)
-                if (!_isExpanded && widget.features.length > widget.maxVisibleFeatures) ...[
+                if (!_isExpanded &&
+                    widget.features.length > widget.maxVisibleFeatures) ...[
                   SizedBox(height: widget.featureSpacing),
                   Text(
                     '+${widget.features.length - widget.maxVisibleFeatures} características más',
@@ -174,19 +177,22 @@ class _FeaturesCarDetailWidgetsState extends State<FeaturesCarDetailWidgets>
       ),
     );
 
-    return widget.showCard ? content : Container(
-      color: widget.backgroundColor,
-      child: content,
-    );
+    return widget.showCard
+        ? content
+        : Container(
+            color: widget.backgroundColor,
+            child: content,
+          );
   }
 
   List<Widget> _buildFeatureList(List<String> features) {
     return features.asMap().entries.map((entry) {
       final index = entry.key;
       final feature = entry.value;
-      
+
       return Padding(
-        padding: EdgeInsets.only(bottom: index < features.length - 1 ? widget.featureSpacing : 0),
+        padding: EdgeInsets.only(
+            bottom: index < features.length - 1 ? widget.featureSpacing : 0),
         child: Row(
           mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -196,7 +202,7 @@ class _FeaturesCarDetailWidgetsState extends State<FeaturesCarDetailWidgets>
               color: widget.iconColor,
               size: widget.iconSize,
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(
                 feature,

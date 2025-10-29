@@ -1,8 +1,6 @@
 import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
-import 'package:ezride/flutter_flow/flutter_flow_util.dart';
 import 'package:ezride/flutter_flow/flutter_flow_widgets.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class VehicleCardWidget extends StatefulWidget {
   final String imageUrl;
@@ -79,26 +77,26 @@ class _VehicleCardWidgetState extends State<VehicleCardWidget> {
     bool hasHalfStar = (rating - fullStars) >= 0.5;
 
     for (int i = 0; i < fullStars; i++) {
-      stars.add(Icon(
+      stars.add(const Icon(
         Icons.star_rounded,
-        color: const Color(0xFFFFD700),
+        color: Color(0xFFFFD700),
         size: 16,
       ));
     }
 
     if (hasHalfStar) {
-      stars.add(Icon(
+      stars.add(const Icon(
         Icons.star_half_rounded,
-        color: const Color(0xFFFFD700),
+        color: Color(0xFFFFD700),
         size: 16,
       ));
     }
 
     int remainingStars = 5 - stars.length;
     for (int i = 0; i < remainingStars; i++) {
-      stars.add(Icon(
+      stars.add(const Icon(
         Icons.star_border_rounded,
-        color: const Color(0xFFFFD700),
+        color: Color(0xFFFFD700),
         size: 16,
       ));
     }
@@ -124,7 +122,7 @@ class _VehicleCardWidgetState extends State<VehicleCardWidget> {
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          color: FlutterFlowTheme.of(context).primaryBackground,
+          color: Colors.white,
           boxShadow: const [
             BoxShadow(
               blurRadius: 4,

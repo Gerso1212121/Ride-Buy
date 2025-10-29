@@ -1,12 +1,12 @@
 import 'package:ezride/Core/widgets/AppBarWidget/CustomAppBarWidget.dart';
 import 'package:ezride/Core/widgets/CustomBottonBar/CustomBottonBar.dart';
-import 'package:ezride/Feature/Favoritos/Favoritos_screen-_PRESENTATION.dart';
-import 'package:ezride/Feature/HISTORY_AUTOS/HistoryAutos_screen-_PRESENTATION.dart';
-import 'package:ezride/Feature/HOME/home_screen-_PRESENTATION.dart';
-import 'package:ezride/Feature/PROFILE_USER/Profile_User-_PRESENTATION.dart';
-import 'package:ezride/Feature/SEARCH/Seach_screen-_PRESENTATION.dart';
+import 'package:ezride/Feature/Home/Favoritos/Favoritos_screen__PRESENTATION.dart';
+import 'package:ezride/Feature/Home/HISTORY_AUTOS/HistoryAutos_screen__PRESENTATION.dart';
+import 'package:ezride/Feature/Home/HOME/home_screen__PRESENTATION.dart';
+import 'package:ezride/Feature/Home/Notifications/Notifications_screen__PRESENTATION_Optimizar.dart';
+import 'package:ezride/Feature/Home/PROFILE_USER/Profile_User__PRESENTATION.dart';
+import 'package:ezride/Feature/Home/SEARCH/Seach_screen__PRESENTATION.dart';
 import 'package:flutter/material.dart';
-import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -16,6 +16,12 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = 0; // Reinicia siempre que MainShell se cree
+  }
+
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
@@ -24,6 +30,16 @@ class _MainShellState extends State<MainShell> {
     const SearchAutos(),
     const FavCards(),
     const ProfileUser(),
+    const NotificacionesWidget(),
+  ];
+
+  final List<String> _titles = [
+    'Ride & Buy',
+    'Historial',
+    'Buscar Autos',
+    'Favoritos',
+    'Perfil',
+    'Notificaciones',
   ];
 
   void _onTabSelected(int index) {
@@ -34,13 +50,11 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-
     return Scaffold(
       appBar: CustomAppBar(
-        title: 'RIDE & BUY',
+        title: _titles[_currentIndex],
         onNotificationsPressed: () {
-          print('Notifications pressed');
+          _onTabSelected(5);
         },
         onMenuPressed: () {
           print('Menu pressed');

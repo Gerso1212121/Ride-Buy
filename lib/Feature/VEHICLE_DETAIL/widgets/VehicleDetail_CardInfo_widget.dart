@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class InfoCard extends StatelessWidget {
   const InfoCard({
-    Key? key,
+    super.key,
     required this.features,
     this.title = 'Información del vehículo',
     this.backgroundColor = Colors.white,
@@ -19,7 +19,7 @@ class InfoCard extends StatelessWidget {
     this.verticalSpacing = 12,
     this.featureSpacing = 0,
     this.crossAxisAlignment = CrossAxisAlignment.center,
-  }) : super(key: key);
+  });
 
   final List<VehicleFeature> features;
   final String title;
@@ -33,7 +33,7 @@ class InfoCard extends StatelessWidget {
   final double textSize;
   final double iconSize;
   final FontWeight titleFontWeight;
-  final FontWeight textFontWeight; 
+  final FontWeight textFontWeight;
   final double verticalSpacing;
   final double featureSpacing;
   final CrossAxisAlignment crossAxisAlignment;
@@ -61,9 +61,9 @@ class InfoCard extends StatelessWidget {
                 letterSpacing: 0.0,
               ),
             ),
-            
+
             SizedBox(height: verticalSpacing),
-            
+
             // Fila de características
             Row(
               mainAxisSize: MainAxisSize.max,
@@ -91,10 +91,10 @@ class InfoCard extends StatelessWidget {
                 color: feature.iconColor ?? iconColor,
                 size: feature.iconSize ?? iconSize,
               ),
-              
+
               // Espaciado
               const SizedBox(height: 4),
-              
+
               // Texto
               Text(
                 feature.text,

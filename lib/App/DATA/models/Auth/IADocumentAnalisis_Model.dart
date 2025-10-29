@@ -22,16 +22,12 @@ class IADocumentAnalisisModel extends IAAnalisisResultEntities {
 
   factory IADocumentAnalisisModel.fromJson(Map<String, dynamic> json) {
     return IADocumentAnalisisModel(
-      id: json['id'] ?? '',
+      id: json['id'],
       analysisType: MLAnalysisType.values.firstWhere(
-        (e) => e.toString() == 'MLAnalysisType.${json['analysisType']}',
-        orElse: () => MLAnalysisType.documentOcr,
-      ),
+          (e) => e.toString() == 'MLAnalysisType.${json['analysisType']}'),
       sourceType: MLSourceType.values.firstWhere(
-        (e) => e.toString() == 'MLSourceType.${json['sourceType']}',
-        orElse: () => MLSourceType.documento,
-      ),
-      sourceId: json['sourceId'] ?? '',
+          (e) => e.toString() == 'MLSourceType.${json['sourceType']}'),
+      sourceId: json['sourceId'],
       provider: json['provider'],
       providerRef: json['providerRef'],
       confidenceScore: (json['confidenceScore'] != null)
@@ -41,7 +37,7 @@ class IADocumentAnalisisModel extends IAAnalisisResultEntities {
       primaryFinding: json['primaryFinding'],
       featuresUsed: (json['featuresUsed'] != null)
           ? List<String>.from(json['featuresUsed'])
-          : [],
+          : null,
       analysisDurationMs: json['analysisDurationMs'],
       costUnits: (json['costUnits'] != null)
           ? double.tryParse(json['costUnits'].toString())
@@ -49,8 +45,8 @@ class IADocumentAnalisisModel extends IAAnalisisResultEntities {
       findings: json['findings'] ?? {},
       recommendations: (json['recommendations'] != null)
           ? List<String>.from(json['recommendations'])
-          : [],
-      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
+          : null,
+      createdAt: DateTime.parse(json['createdAt']),
     );
   }
 

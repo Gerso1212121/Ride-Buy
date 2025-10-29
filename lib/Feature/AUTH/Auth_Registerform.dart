@@ -1,15 +1,12 @@
-import 'package:ezride/flutter_flow/flutter_flow_animations.dart';
-import 'package:flutter/material.dart';
 import 'package:ezride/Feature/AUTH/controller/Auth_controller.dart';
 import 'package:ezride/Feature/AUTH/widget/Auth_CustomButton_widget.dart';
 import 'package:ezride/Feature/AUTH/widget/Auth_CustomTextField_widget.dart';
 import 'package:ezride/Feature/AUTH/widget/Auth_SocialButton_widget.dart';
-import 'VerifyEmailScreen.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:ezride/flutter_flow/flutter_flow_animations.dart';
 import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
-
-final _authController = AuthController();
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class RegisterForm extends StatefulWidget {
   final AuthModel model;
@@ -40,14 +37,11 @@ class _RegisterFormState extends State<RegisterForm> {
   bool _isPasswordValid = true;
   bool _isConfirmPasswordValid = true;
 
-  late AuthController _authController;
-
   @override
   void initState() {
     super.initState();
-    _authController = AuthController();
 
-    // Validación en tiempo real
+    // Validación en tiempo real unificada
     widget.model.emailAddressCreateTextController
         .addListener(_validateRealTime);
     widget.model.passwordCreateTextController.addListener(_validateRealTime);
@@ -62,51 +56,68 @@ class _RegisterFormState extends State<RegisterForm> {
         _isPasswordValid =
             _validatePassword(widget.model.passwordCreateTextController.text);
         _isConfirmPasswordValid = _validateConfirmPassword(
-          widget.model.passwordCreateTextController.text,
-          widget.model.passwordConfirmTextController.text,
-        );
+            widget.model.passwordCreateTextController.text,
+            widget.model.passwordConfirmTextController.text);
       });
     }
   }
 
   bool _validateEmail(String value) {
-    if (value.isEmpty) return true;
+    if (value.isEmpty) return true; // No mostrar error si está vacío
+
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     return emailRegex.hasMatch(value);
   }
 
   bool _validatePassword(String value) {
-    if (value.isEmpty) return true;
+    if (value.isEmpty) return true; // No mostrar error si está vacío
+
     return value.length >= 6;
   }
 
   bool _validateConfirmPassword(String password, String confirmPassword) {
-    if (confirmPassword.isEmpty) return true;
+    if (confirmPassword.isEmpty) return true; // No mostrar error si está vacío
+
     return password == confirmPassword;
   }
 
   Color _getEmailBorderColor(BuildContext context) {
     final text = widget.model.emailAddressCreateTextController.text;
-    if (text.isEmpty) return FlutterFlowTheme.of(context).alternate;
+
+    if (text.isEmpty) {
+      return FlutterFlowTheme.of(context)
+          .alternate; // Color normal cuando está vacío
+    }
+
     return _isEmailValid
-        ? FlutterFlowTheme.of(context).primary
-        : FlutterFlowTheme.of(context).error;
+        ? FlutterFlowTheme.of(context).primary // Verde/azul cuando es válido
+        : FlutterFlowTheme.of(context).error; // Rojo cuando es inválido
   }
 
   Color _getPasswordBorderColor(BuildContext context) {
     final text = widget.model.passwordCreateTextController.text;
-    if (text.isEmpty) return FlutterFlowTheme.of(context).alternate;
+
+    if (text.isEmpty) {
+      return FlutterFlowTheme.of(context)
+          .alternate; // Color normal cuando está vacío
+    }
+
     return _isPasswordValid
-        ? FlutterFlowTheme.of(context).primary
-        : FlutterFlowTheme.of(context).error;
+        ? FlutterFlowTheme.of(context).primary // Verde/azul cuando es válido
+        : FlutterFlowTheme.of(context).error; // Rojo cuando es inválido
   }
 
   Color _getConfirmPasswordBorderColor(BuildContext context) {
     final text = widget.model.passwordConfirmTextController.text;
-    if (text.isEmpty) return FlutterFlowTheme.of(context).alternate;
+
+    if (text.isEmpty) {
+      return FlutterFlowTheme.of(context)
+          .alternate; // Color normal cuando está vacío
+    }
+
     return _isConfirmPasswordValid
-        ? FlutterFlowTheme.of(context).primary
-        : FlutterFlowTheme.of(context).error;
+        ? FlutterFlowTheme.of(context).primary // Verde/azul cuando es válido
+        : FlutterFlowTheme.of(context).error; // Rojo cuando es inválido
   }
 
   @override
@@ -121,9 +132,9 @@ class _RegisterFormState extends State<RegisterForm> {
             mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildTitle(context, '¡Regístrate para comenzar tu aventura!'),
+              _buildTitle(context, 'Registrate para comenzar tu aventura!'),
 
-              // 📧 Email
+              // Email
               CustomTextField(
                 controller: widget.model.emailAddressCreateTextController,
                 focusNode: widget.model.emailAddressCreateFocusNode,
@@ -132,8 +143,9 @@ class _RegisterFormState extends State<RegisterForm> {
                 borderColor: _getEmailBorderColor(context),
                 focusedBorderColor: _getEmailBorderColor(context),
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  if (value == null || value.isEmpty) {
                     return 'Ingresa tu correo';
+                  }
                   final emailRegex =
                       RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
                   if (!emailRegex.hasMatch(value)) return 'Correo inválido';
@@ -141,7 +153,7 @@ class _RegisterFormState extends State<RegisterForm> {
                 },
               ),
 
-              // 🔑 Password
+              // Password
               CustomTextField(
                 controller: widget.model.passwordCreateTextController,
                 focusNode: widget.model.passwordCreateFocusNode,
@@ -150,14 +162,15 @@ class _RegisterFormState extends State<RegisterForm> {
                 borderColor: _getPasswordBorderColor(context),
                 focusedBorderColor: _getPasswordBorderColor(context),
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  if (value == null || value.isEmpty) {
                     return 'Ingresa tu contraseña';
+                  }
                   if (value.length < 6) return 'Mínimo 6 caracteres';
                   return null;
                 },
               ),
 
-              // 🔁 Confirm Password
+              // Confirm Password
               CustomTextField(
                 controller: widget.model.passwordConfirmTextController,
                 focusNode: widget.model.passwordConfirmFocusNode,
@@ -166,56 +179,24 @@ class _RegisterFormState extends State<RegisterForm> {
                 borderColor: _getConfirmPasswordBorderColor(context),
                 focusedBorderColor: _getConfirmPasswordBorderColor(context),
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  if (value == null || value.isEmpty) {
                     return 'Confirma tu contraseña';
-                  if (value != widget.model.passwordCreateTextController.text)
+                  }
+                  if (value != widget.model.passwordCreateTextController.text) {
                     return 'Las contraseñas no coinciden';
+                  }
                   return null;
                 },
               ),
 
-              const SizedBox(height: 16),
-
-              // 🔒 Botón Crear Cuenta
               CustomButton(
                 text: 'Crear Cuenta',
-                onPressed: () async {
+                onPressed: () {
                   if (_formKey.currentState!.validate()) {
-                    try {
-                      final result = await _authController.registerUser(
-                        email: widget
-                            .model.emailAddressCreateTextController.text
-                            .trim(),
-                        password: widget.model.passwordCreateTextController.text
-                            .trim(),
-                        emailRedirectTo:
-                            'https://consult-al2i.onrender.com/auth/verify',
-                      );
-
-                      if (result.ok) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text(result.message ??
-                                  'Cuenta creada correctamente')),
-                        );
-
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const VerifyEmailScreen()),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content:
-                                  Text(result.error ?? 'Error desconocido')),
-                        );
-                      }
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error al registrar: $e')),
-                      );
-                    }
+                    widget.onRegisterPressed();
+                  } else {
+                    // Forzar validación si falla
+                    _validateRealTime();
                   }
                 },
               ),
@@ -227,12 +208,11 @@ class _RegisterFormState extends State<RegisterForm> {
               ),
             ],
           ).animateOnPageLoad(
-            widget.animationsMap['columnOnPageLoadAnimation1'] ??
-                AnimationInfo(
-                  trigger: AnimationTrigger.onPageLoad,
-                  effectsBuilder: () => [FadeEffect(duration: 300.ms)],
-                ),
-          ),
+              widget.animationsMap['columnOnPageLoadAnimation1'] ??
+                  AnimationInfo(
+                    trigger: AnimationTrigger.onPageLoad,
+                    effectsBuilder: () => [FadeEffect(duration: 300.ms)],
+                  )),
         ),
       ),
     );
@@ -279,7 +259,7 @@ class _RegisterFormState extends State<RegisterForm> {
             GestureDetector(
               onTap: widget.onLoginLinkPressed,
               child: Text(
-                'Inicia aquí',
+                'Inicia aqui',
                 style: FlutterFlowTheme.of(context).bodySmall.override(
                       font: GoogleFonts.lato(
                         fontWeight:

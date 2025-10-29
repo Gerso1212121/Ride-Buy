@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class Info_CarDetailwidgets extends StatelessWidget {
   const Info_CarDetailwidgets({
-    Key? key,
+    super.key,
     required this.price,
     required this.period,
     this.label = 'Precio por día',
@@ -23,7 +23,7 @@ class Info_CarDetailwidgets extends StatelessWidget {
     this.labelFontWeight = FontWeight.normal,
     this.priceFontWeight = FontWeight.bold,
     this.periodFontWeight = FontWeight.normal,
-  }) : super(key: key);
+  });
 
   final String price;
   final String period;
@@ -68,15 +68,14 @@ class Info_CarDetailwidgets extends StatelessWidget {
                 letterSpacing: 0.0,
               ),
             ),
-            
+
             // Precio con RichText
             _buildPriceRichText(),
           ],
         ),
-        
+
         // Botón de favorito (opcional)
-        if (showFavoriteButton) 
-          _buildFavoriteButton(),
+        if (showFavoriteButton) _buildFavoriteButton(),
       ],
     );
   }

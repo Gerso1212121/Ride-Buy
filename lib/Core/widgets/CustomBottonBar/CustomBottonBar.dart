@@ -18,7 +18,7 @@ class BottomBarItem {
 
 class CustomBottomBar extends StatefulWidget {
   const CustomBottomBar({
-    Key? key,
+    super.key,
     required this.items,
     this.currentIndex = 0,
     this.backgroundColor = Colors.white,
@@ -30,7 +30,7 @@ class CustomBottomBar extends StatefulWidget {
     this.animationDuration = const Duration(milliseconds: 300),
     this.badgeColor = Colors.red,
     this.badgeTextColor = Colors.white,
-  }) : super(key: key);
+  });
 
   final List<BottomBarItem> items;
   final int currentIndex;
@@ -85,7 +85,8 @@ class _CustomBottomBarState extends State<CustomBottomBar> {
     required int index,
   }) {
     final bool isSelected = widget.currentIndex == index;
-    final Color color = isSelected ? widget.selectedColor : widget.unselectedColor;
+    final Color color =
+        isSelected ? widget.selectedColor : widget.unselectedColor;
 
     return Expanded(
       child: GestureDetector(
@@ -103,7 +104,8 @@ class _CustomBottomBarState extends State<CustomBottomBar> {
                   width: widget.buttonSize,
                   height: widget.buttonSize,
                   decoration: BoxDecoration(
-                    color: isSelected ? widget.selectedColor : Colors.transparent,
+                    color:
+                        isSelected ? widget.selectedColor : Colors.transparent,
                     borderRadius: BorderRadius.circular(12),
                     border: isSelected
                         ? Border.all(

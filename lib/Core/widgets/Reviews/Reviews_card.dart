@@ -19,7 +19,7 @@ class ReviewCard extends StatelessWidget {
   final Color starColor;
 
   const ReviewCard({
-    Key? key,
+    super.key,
     required this.userName,
     required this.userImageUrl,
     required this.rating,
@@ -33,12 +33,12 @@ class ReviewCard extends StatelessWidget {
     this.rowSpacing = 12,
     this.textSpacing = 8,
     this.starColor = const Color(0xFFFFD700),
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
-    
+
     return Padding(
       padding: padding,
       child: Container(
@@ -75,7 +75,7 @@ class ReviewCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  
+
                   // Información del usuario y rating
                   Expanded(
                     child: Column(
@@ -94,18 +94,20 @@ class ReviewCard extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        
+
                         // Rating con estrellas
                         Padding(
-                          padding: const EdgeInsetsDirectional.fromSTEB(0, 2, 0, 0),
-                          child: _buildStars(rating, starSize, starColor, starSpacing),
+                          padding:
+                              const EdgeInsetsDirectional.fromSTEB(0, 2, 0, 0),
+                          child: _buildStars(
+                              rating, starSize, starColor, starSpacing),
                         ),
                       ],
                     ),
                   ),
                 ].divide(SizedBox(width: rowSpacing)),
               ),
-              
+
               // Comentario
               Padding(
                 padding: const EdgeInsetsDirectional.fromSTEB(0, 8, 0, 0),
@@ -122,7 +124,7 @@ class ReviewCard extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               // Tiempo transcurrido
               Padding(
                 padding: const EdgeInsetsDirectional.fromSTEB(0, 8, 0, 0),
@@ -148,9 +150,9 @@ class ReviewCard extends StatelessWidget {
   Widget _buildStars(double rating, double size, Color color, double spacing) {
     final fullStars = rating.floor();
     final hasHalfStar = (rating - fullStars) >= 0.5;
-    
+
     List<Widget> stars = [];
-    
+
     // Estrellas llenas
     for (int i = 0; i < fullStars; i++) {
       stars.add(Icon(
@@ -159,7 +161,7 @@ class ReviewCard extends StatelessWidget {
         size: size,
       ));
     }
-    
+
     // Media estrella
     if (hasHalfStar) {
       stars.add(Icon(
@@ -168,7 +170,7 @@ class ReviewCard extends StatelessWidget {
         size: size,
       ));
     }
-    
+
     // Estrellas vacías
     final emptyStars = 5 - stars.length;
     for (int i = 0; i < emptyStars; i++) {
@@ -178,7 +180,7 @@ class ReviewCard extends StatelessWidget {
         size: size,
       ));
     }
-    
+
     return Row(
       mainAxisSize: MainAxisSize.max,
       children: stars.divide(SizedBox(width: spacing)),

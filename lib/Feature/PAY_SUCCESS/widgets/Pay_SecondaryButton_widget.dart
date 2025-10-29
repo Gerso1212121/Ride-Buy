@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class SecondaryButtonPaycWidgets extends StatelessWidget {
   const SecondaryButtonPaycWidgets({
-    Key? key,
+    super.key,
     required this.onPressed,
     required this.text,
     this.width = double.infinity,
@@ -30,7 +30,7 @@ class SecondaryButtonPaycWidgets extends StatelessWidget {
     this.shadowColor = const Color(0x1A000000),
     this.shadowBlurRadius = 4,
     this.shadowOffset = const Offset(0, 2),
-  }) : super(key: key);
+  });
 
   final VoidCallback onPressed;
   final String text;

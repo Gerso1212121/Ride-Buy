@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppbarPaycWidgets extends StatelessWidget implements PreferredSizeWidget {
   const AppbarPaycWidgets({
-    Key? key,
+    super.key,
     required this.onClosePressed,
     this.title = 'Confirmación de pago',
     this.backgroundColor = const Color(0xFFF8FFFE),
@@ -12,7 +12,7 @@ class AppbarPaycWidgets extends StatelessWidget implements PreferredSizeWidget {
     this.leadingButtonColor = const Color(0xFFF9FAFB),
     this.leadingBorderColor = const Color(0xFFE5E7EB),
     this.titleColor = const Color(0xFF1F2937),
-  }) : super(key: key);
+  });
 
   final VoidCallback onClosePressed;
   final String title;
@@ -33,7 +33,8 @@ class AppbarPaycWidgets extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: backgroundColor,
       automaticallyImplyLeading: false,
       leading: const _LeadingButton(), // Widget separado para optimización
-      title: _Title( // Widget separado con const
+      title: _Title(
+        // Widget separado con const
         title: title,
         titleColor: titleColor,
       ),

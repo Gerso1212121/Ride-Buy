@@ -15,7 +15,7 @@ class RatingWidget extends StatelessWidget {
   final MainAxisAlignment mainAxisAlignment;
 
   const RatingWidget({
-    Key? key,
+    super.key,
     required this.rating,
     required this.reviewCount,
     this.starSize = 20,
@@ -25,12 +25,12 @@ class RatingWidget extends StatelessWidget {
     this.ratingTextStyle,
     this.reviewsTextStyle,
     this.mainAxisAlignment = MainAxisAlignment.center,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
-    
+
     return Row(
       mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: mainAxisAlignment,
@@ -38,36 +38,39 @@ class RatingWidget extends StatelessWidget {
         // Estrellas
         Row(
           mainAxisSize: MainAxisSize.max,
-          children: _buildStars(rating, starSize, starColor).divide(SizedBox(width: starSpacing)),
+          children: _buildStars(rating, starSize, starColor)
+              .divide(SizedBox(width: starSpacing)),
         ),
-        
+
         // Puntuación numérica
         Text(
           rating.toStringAsFixed(1),
-          style: ratingTextStyle ?? theme.bodyMedium.override(
-            font: GoogleFonts.lato(
-              fontWeight: FontWeight.w600,
-              fontStyle: theme.bodyMedium.fontStyle,
-            ),
-            letterSpacing: 0.0,
-            fontWeight: FontWeight.w600,
-            fontStyle: theme.bodyMedium.fontStyle,
-          ),
+          style: ratingTextStyle ??
+              theme.bodyMedium.override(
+                font: GoogleFonts.lato(
+                  fontWeight: FontWeight.w600,
+                  fontStyle: theme.bodyMedium.fontStyle,
+                ),
+                letterSpacing: 0.0,
+                fontWeight: FontWeight.w600,
+                fontStyle: theme.bodyMedium.fontStyle,
+              ),
         ),
-        
+
         // Número de reseñas
         Text(
           '($reviewCount reseñas)',
-          style: reviewsTextStyle ?? theme.bodyMedium.override(
-            font: GoogleFonts.lato(
-              fontWeight: theme.bodyMedium.fontWeight,
-              fontStyle: theme.bodyMedium.fontStyle,
-            ),
-            color: theme.secondaryText,
-            letterSpacing: 0.0,
-            fontWeight: theme.bodyMedium.fontWeight,
-            fontStyle: theme.bodyMedium.fontStyle,
-          ),
+          style: reviewsTextStyle ??
+              theme.bodyMedium.override(
+                font: GoogleFonts.lato(
+                  fontWeight: theme.bodyMedium.fontWeight,
+                  fontStyle: theme.bodyMedium.fontStyle,
+                ),
+                color: theme.secondaryText,
+                letterSpacing: 0.0,
+                fontWeight: theme.bodyMedium.fontWeight,
+                fontStyle: theme.bodyMedium.fontStyle,
+              ),
         ),
       ].divide(SizedBox(width: textSpacing)),
     );

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class BottomBarCardetailwidgets extends StatelessWidget {
   const BottomBarCardetailwidgets({
-    Key? key,
+    super.key,
     required this.price,
     required this.period,
     required this.onRentPressed,
@@ -32,7 +32,7 @@ class BottomBarCardetailwidgets extends StatelessWidget {
     this.buttonBorderRadius = 25,
     this.buttonElevation = 2,
     this.showShadow = true,
-  }) : super(key: key);
+  });
 
   final String price;
   final String period;
@@ -106,12 +106,12 @@ class BottomBarCardetailwidgets extends StatelessWidget {
                       letterSpacing: 0.0,
                     ),
                   ),
-                  
+
                   // Precio con RichText
                   _buildPriceRichText(),
                 ],
               ),
-              
+
               // Botón de renta
               _buildRentButton(),
             ],
@@ -151,7 +151,7 @@ class BottomBarCardetailwidgets extends StatelessWidget {
   }
 
   Widget _buildRentButton() {
-    return Container(
+    return SizedBox(
       height: buttonHeight,
       child: ElevatedButton(
         onPressed: onRentPressed,

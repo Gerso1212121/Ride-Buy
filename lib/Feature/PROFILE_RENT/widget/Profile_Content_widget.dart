@@ -1,5 +1,4 @@
-import 'dart:ui';
-import 'package:ezride/Feature/PROFILE_RENT/profile_model.-_model.dart';
+import 'package:ezride/Feature/PROFILE_RENT/profile_model_model.dart';
 import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
 import 'package:ezride/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
@@ -233,7 +232,7 @@ class ContentSection extends StatelessWidget {
 
   Widget _buildServicesGrid(
       BuildContext context, List<AdditionalService> services) {
-    return Container(
+    return SizedBox(
       width: double.infinity, // ✅ Ocupa todo el ancho disponible
       child: Wrap(
         alignment:

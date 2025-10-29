@@ -1,6 +1,6 @@
 // Export pages desde index.dart
-export 'Feature/HOME/home_screen-_PRESENTATION.dart' show HomeScreenState;
+export 'Feature/Home/HOME/home_screen__PRESENTATION.dart' show HomeScreenState;
 export 'App/presentation/pages/auth/AuthPage.dart' show AuthPage;
+export 'Feature/Home/SEARCH/Seach_screen__PRESENTATION.dart' show BusquedaautosWidget;
 
-export 'Feature/SEARCH/Seach_screen-_PRESENTATION.dart'
-    show BusquedaautosWidget;
+
