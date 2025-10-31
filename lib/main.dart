@@ -10,11 +10,6 @@ void main() async {
   // ✅ CARGAR VARIABLES DE ENTORNO
   await dotenv.load(fileName: '.env');
   
-  // ✅ INICIALIZAR SUPABASE CON LAS VARIABLES DEL .env
-  await Supabase.initialize(
-    url: dotenv.get('SUPABASE_URL'),
-    anonKey: dotenv.get('SUPABASE_ANON_KEY'),
-  );
   
   await FlutterFlowTheme.initialize();
 

@@ -22,12 +22,14 @@ class IADocumentAnalisisModel extends IAAnalisisResultEntities {
 
   factory IADocumentAnalisisModel.fromJson(Map<String, dynamic> json) {
     return IADocumentAnalisisModel(
-      id: json['id'],
+      id: json['id'] ?? 'no_id', // valor por defecto si es null
       analysisType: MLAnalysisType.values.firstWhere(
-          (e) => e.toString() == 'MLAnalysisType.${json['analysisType']}'),
+          (e) => e.toString() == 'MLAnalysisType.${json['analysisType']}',
+          orElse: () => MLAnalysisType.documentOcr), // fallback
       sourceType: MLSourceType.values.firstWhere(
-          (e) => e.toString() == 'MLSourceType.${json['sourceType']}'),
-      sourceId: json['sourceId'],
+          (e) => e.toString() == 'MLSourceType.${json['sourceType']}',
+          orElse: () => MLSourceType.camera), // fallback
+      sourceId: json['sourceId'] ?? 'no_source',
       provider: json['provider'],
       providerRef: json['providerRef'],
       confidenceScore: (json['confidenceScore'] != null)
@@ -42,11 +44,13 @@ class IADocumentAnalisisModel extends IAAnalisisResultEntities {
       costUnits: (json['costUnits'] != null)
           ? double.tryParse(json['costUnits'].toString())
           : null,
-      findings: json['findings'] ?? {},
+      findings: json['findings'] != null
+          ? Map<String, dynamic>.from(json['findings'])
+          : {},
       recommendations: (json['recommendations'] != null)
           ? List<String>.from(json['recommendations'])
           : null,
-      createdAt: DateTime.parse(json['createdAt']),
+      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
     );
   }
 

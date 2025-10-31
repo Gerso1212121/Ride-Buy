@@ -69,7 +69,7 @@ enum MLAnalysisType {
   documentOcr
 }
 
-enum MLSourceType { usuario, vehiculo, renta, documento, imagen }
+enum MLSourceType { usuario, vehiculo, renta, documento, imagen, camera }
 
 enum PickupMethod { agencia, domicilio }
 

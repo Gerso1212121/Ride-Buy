@@ -4,14 +4,13 @@ import '../../datasources/Auth/IADocument_DataSourcers.dart';
 import 'dart:io';
 
 class IADocumentAnalisisRepositoryData implements IADocumentRepositoryDomain {
-  final IADocumentDataSourcers datasource;
+  final IADocumentDataSource datasource;
 
   IADocumentAnalisisRepositoryData(this.datasource);
 
   @override
   Future<IAAnalisisResultEntities> analyzeDocument(File file,
       {String? sourceId, String? provider}) {
-    return datasource.analyzeDocument(file,
-        sourceId: sourceId, provider: provider);
+    return datasource.analyzeDocument(file);
   }
 }

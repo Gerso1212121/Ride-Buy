@@ -13,10 +13,11 @@ class AuthProfilesUserModel extends Profile {
     super.displayName,
     super.phone,
     super.verificationStatus,
-    super.passwd,
+    super.passwd, // solo para compatibilidad interna
     super.duiNumber,
     super.licenseNumber,
     super.dateOfBirth,
+    super.email,
     super.emailVerified,
     required super.createdAt,
     required super.updatedAt,
@@ -68,11 +69,9 @@ class AuthProfilesUserModel extends Profile {
       duiNumber: map['dui_number'] as String?,
       licenseNumber: map['license_number'] as String?,
       dateOfBirth: map['date_of_birth'] != null
-          ? (map['date_of_birth'] is DateTime
-              ? map['date_of_birth']
-              : DateTime.parse(map['date_of_birth'] as String))
+          ? DateTime.parse(map['date_of_birth'] as String)
           : null,
-
+      email: map['email'] as String?,
       emailVerified: map['email_verified'] as bool? ?? false,
       createdAt: map['created_at'] is DateTime
           ? map['created_at']
@@ -80,7 +79,7 @@ class AuthProfilesUserModel extends Profile {
       updatedAt: map['updated_at'] is DateTime
           ? map['updated_at']
           : DateTime.parse(map['updated_at'] as String),
-      token: map['token'] as String?, // solo local
+      token: map['token'] as String?,
     );
   }
 
@@ -93,10 +92,10 @@ class AuthProfilesUserModel extends Profile {
       'display_name': displayName,
       'phone': phone,
       'verification_status': verificationStatus.name,
-      'password': passwd,
       'dui_number': duiNumber,
       'license_number': licenseNumber,
       'date_of_birth': dateOfBirth?.toIso8601String(),
+      'email': email,
       'email_verified': emailVerified,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -113,11 +112,12 @@ class AuthProfilesUserModel extends Profile {
   Map<String, dynamic> toJson() => toMap();
 
   // ------------------- COPYWITH -------------------
+  @override
   AuthProfilesUserModel copyWith({
     String? id,
     UserRole? role,
     String? displayName,
-    String? email, // ⚠ debe estar para coincidir con la base
+    String? email,
     String? phone,
     VerificationStatus? verificationStatus,
     String? passwd,
@@ -127,7 +127,7 @@ class AuthProfilesUserModel extends Profile {
     bool? emailVerified,
     DateTime? createdAt,
     DateTime? updatedAt,
-    String? token, // nuevo parámetro exclusivo del modelo
+    String? token,
   }) {
     return AuthProfilesUserModel(
       id: id ?? this.id,
@@ -139,6 +139,7 @@ class AuthProfilesUserModel extends Profile {
       duiNumber: duiNumber ?? this.duiNumber,
       licenseNumber: licenseNumber ?? this.licenseNumber,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      email: email ?? this.email,
       emailVerified: emailVerified ?? this.emailVerified,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -146,7 +147,7 @@ class AuthProfilesUserModel extends Profile {
     );
   }
 
-  /// 🧩 Convierte una entidad `Profile` a un modelo `AuthProfilesUserModel`
+  // ------------------- FROM ENTITY -------------------
   factory AuthProfilesUserModel.fromEntity(Profile entity, {String? token}) {
     return AuthProfilesUserModel(
       id: entity.id,
@@ -158,10 +159,11 @@ class AuthProfilesUserModel extends Profile {
       duiNumber: entity.duiNumber,
       licenseNumber: entity.licenseNumber,
       dateOfBirth: entity.dateOfBirth,
+      email: entity.email,
       emailVerified: entity.emailVerified,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
-      token: token, // opcional, útil para guardar sesión local
+      token: token,
     );
   }
 

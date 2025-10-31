@@ -20,7 +20,7 @@ abstract class ProfileUserRepositoryDomain {
   Future<AuthProfilesUserModel?> getLocalSession();
 
   // ✅ Nuevo método para verificar OTP
-  Future<bool> verifyOtp({
+  Future<Profile?> verifyOtp({
     required String email,
     required String inputOtp,
   });

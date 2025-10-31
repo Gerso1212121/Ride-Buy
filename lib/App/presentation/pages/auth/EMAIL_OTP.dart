@@ -63,7 +63,7 @@ class _AuthOtpPageState extends State<AuthOtpPage> {
     try {
       print('🔍 Iniciando verificación OTP...');
 
-      final isValid =
+      final profile =
           await widget.profileUserUseCaseGlobal.repository.verifyOtp(
         email: widget.email,
         inputOtp: inputOtp,
@@ -73,31 +73,29 @@ class _AuthOtpPageState extends State<AuthOtpPage> {
 
       setState(() => _isLoading = false);
 
-      if (isValid) {
+      if (profile != null) {
         print('✅ OTP verificado - Iniciando sesión automática...');
 
-        // Obtener el perfil actualizado desde la BD
-        final profile =
-            await widget.profileUserUseCaseGlobal.repository.getUserProfile(
-          email: widget.email, // Aquí deberías pasar el ID real si lo tienes
-        );
-
-        // Guardar la sesión
+        // Guardar sesión localmente
         await SessionManager.setProfile(profile);
+
+        final perfilId = profile.id;
+        print('🧩 Perfil ID obtenido: $perfilId');
 
         if (!mounted) return;
 
-        // Navegar a la pantalla principal
-        context.go('/main');
+        // ✅ Navegar a la siguiente pantalla con GoRouter
+        context.go(
+          '/capture-document',
+          extra: {'perfilId': profile.id},
+        );
       } else {
         _showError(
             'Código OTP incorrecto. Por favor verifica e intenta nuevamente.');
       }
     } catch (e) {
       if (!mounted) return;
-
       setState(() => _isLoading = false);
-
       print('❌ Error verificando OTP: $e');
 
       if (e.toString().contains('expirado')) {

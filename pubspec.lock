@@ -65,14 +65,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
-  blinkid_flutter:
-    dependency: "direct main"
-    description:
-      name: blinkid_flutter
-      sha256: dd540634e108bfd8c04a5ee73eecfb5a4b950e6f608fd8ee40c50408a4970e1d
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.13.3"
   boolean_selector:
     dependency: transitive
     description:
@@ -117,12 +109,20 @@ packages:
     dependency: "direct main"
     description:
       name: camera
-      sha256: "26ff41045772153f222ffffecba711a206f670f5834d40ebf5eed3811692f167"
+      sha256: dfa8fc5a1adaeb95e7a54d86a5bd56f4bb0e035515354c8ac6d262e35cec2ec8
       url: "https://pub.dev"
     source: hosted
-    version: "0.11.0+2"
-  camera_android_camerax:
+    version: "0.10.6"
+  camera_android:
     dependency: transitive
+    description:
+      name: camera_android
+      sha256: "32f04948a284b71d938fe275616faf4957d07f9b3aab8021bfc8c418301a289e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.10.9+11"
+  camera_android_camerax:
+    dependency: "direct main"
     description:
       name: camera_android_camerax
       sha256: "011be2ab0e5b3e3aa8094413fa890f8c5c5afd7cfdaef353a992047d4dab5780"
@@ -130,7 +130,7 @@ packages:
     source: hosted
     version: "0.6.8+2"
   camera_avfoundation:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: camera_avfoundation
       sha256: ca36181194f429eef3b09de3c96280f2400693f9735025f90d1f4a27465fdd72
@@ -138,7 +138,7 @@ packages:
     source: hosted
     version: "0.9.19"
   camera_platform_interface:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: camera_platform_interface
       sha256: "2f757024a48696ff4814a789b0bd90f5660c0fb25f393ab4564fb483327930e2"
@@ -361,10 +361,10 @@ packages:
     dependency: "direct main"
     description:
       name: font_awesome_flutter
-      sha256: f50ce90dbe26d977415b9540400d6778bef00894aced6358ae578abd92b14b10
+      sha256: f71fb2a55a3ea38ece0bce7d1eb0fe975123c3bfc9a9959e3b01e6fea866cd16
       url: "https://pub.dev"
     source: hosted
-    version: "10.9.0"
+    version: "10.0.0"
   from_css_color:
     dependency: "direct main"
     description:

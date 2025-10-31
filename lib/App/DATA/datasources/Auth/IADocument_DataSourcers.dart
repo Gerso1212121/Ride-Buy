@@ -1,74 +1,51 @@
 import 'dart:io';
-import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
-import 'package:ezride/Services/render/render_db_client.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../models/Auth/IADocumentAnalisis_Model.dart';
-import 'package:cross_file/cross_file.dart';
 
-class IADocumentDataSourcers {
+class IADocumentDataSource {
   final Dio dio;
-  final String endpoint;
-  final String apiKey;
-
-  IADocumentDataSourcers({
+  final String backendUrl; // URL de tu servidor Express, ej: http://localhost:3000
+  IADocumentDataSource({
     required this.dio,
-    required this.endpoint,
-    required this.apiKey,
+    required this.backendUrl,
   });
 
-  Future<IADocumentAnalisisModel> analyzeDocument(File file,
-      {String? sourceId, String? provider}) async {
-    final fileBytes = await MultipartFile.fromFile(file.path,
-        filename: file.path.split('/').last);
-    final formData = FormData.fromMap({'file': fileBytes});
+  Future<IADocumentAnalisisModel> analyzeDocument(File file) async {
+    final analyzeUrl = "$backendUrl/analyze-id";
 
-    final response = await dio.post(
-      endpoint,
-      data: formData,
-      options: Options(headers: {
-        'Ocp-Apim-Subscription-Key': apiKey,
-        'Content-Type': 'multipart/form-data',
-      }),
-    );
+    print("📤 Enviando documento al backend: $analyzeUrl");
 
-    final data = response.data as Map<String, dynamic>;
-
-    return IADocumentAnalisisModel.fromJson({
-      'id': data['id'] ?? '',
-      'analysisType': data['analysisType'] ?? 'document',
-      'sourceType': data['sourceType'] ?? 'upload',
-      'sourceId': sourceId ?? '',
-      'provider': provider,
-      'providerRef': data['providerRef'],
-      'confidenceScore': data['confidenceScore'],
-      'isApproved': data['isApproved'] ?? false,
-      'primaryFinding': data['primaryFinding'],
-      'featuresUsed': data['featuresUsed'],
-      'analysisDurationMs': data['analysisDurationMs'],
-      'costUnits': data['costUnits'],
-      'findings': data['findings'] ?? {},
-      'recommendations': data['recommendations'],
-      'createdAt': DateTime.now().toIso8601String(),
+    // Crear FormData para enviar archivo como multipart/form-data
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(
+        file.path,
+        filename: file.path.split('/').last,
+      ),
     });
-  }
 
-  final dataSource = IADocumentDataSourcers(
-    dio: Dio(),
-    endpoint: dotenv.env['AZURE_DOC_ENDPOINT']!,
-    apiKey: dotenv.env['AZURE_DOC_KEY']!,
-  );
-
-  Future<void> uploadDocument(XFile file) async {
-    final result = await dataSource.analyzeDocument(File(file.path));
-    final hash = sha256.convert(await File(file.path).readAsBytes()).toString();
-
-    await RenderDbClient.insertDocument(
-      ocrData: result.toJson(),
-      hash: hash,
-      createdAt: DateTime.now(),
-      sourceType: 'document_front', // o document_back
-      provider: 'AzureDocumentIntelligence',
+    // Realizar POST a tu endpoint Node
+    final response = await dio.post(
+      analyzeUrl,
+      data: formData,
+      options: Options(
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        responseType: ResponseType.json,
+        validateStatus: (status) => status != null && status < 500,
+      ),
     );
+
+    print("📥 Response status: ${response.statusCode}");
+    print("📥 Response data: ${response.data}");
+
+    if (response.statusCode == 200 && response.data["success"] == true) {
+      print("✅ Documento analizado correctamente.");
+      return IADocumentAnalisisModel.fromJson(response.data);
+    } else {
+      throw Exception(
+        "❌ Error del servidor: ${response.data["error"] ?? "Error desconocido"}",
+      );
+    }
   }
 }

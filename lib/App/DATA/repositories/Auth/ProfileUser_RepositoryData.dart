@@ -188,29 +188,33 @@ class ProfileUserRepositoryData implements ProfileUserRepositoryDomain {
     await prefs.setInt('$_otpTimestampPrefix$email', DateTime.now().millisecondsSinceEpoch);
   }
 
-  @override
-  Future<bool> verifyOtp({required String email, required String inputOtp}) async {
-    final prefs = await SharedPreferences.getInstance();
-    final storedOtp = prefs.getString('$_otpPrefix$email');
-    final timestamp = prefs.getInt('$_otpTimestampPrefix$email');
+@override
+Future<Profile?> verifyOtp({required String email, required String inputOtp}) async {
+  final prefs = await SharedPreferences.getInstance();
+  final storedOtp = prefs.getString('$_otpPrefix$email');
+  final timestamp = prefs.getInt('$_otpTimestampPrefix$email');
 
-    if (storedOtp == null || timestamp == null) return false;
+  if (storedOtp == null || timestamp == null) return null;
 
-    if (DateTime.now().millisecondsSinceEpoch - timestamp > 600000) {
-      await prefs.remove('$_otpPrefix$email');
-      await prefs.remove('$_otpTimestampPrefix$email');
-      throw Exception('OTP expirado');
-    }
-
-    if (storedOtp == inputOtp) {
-      await _markEmailAsVerified(email);
-      await prefs.remove('$_otpPrefix$email');
-      await prefs.remove('$_otpTimestampPrefix$email');
-      return true;
-    }
-
-    return false;
+  if (DateTime.now().millisecondsSinceEpoch - timestamp > 600000) {
+    await prefs.remove('$_otpPrefix$email');
+    await prefs.remove('$_otpTimestampPrefix$email');
+    throw Exception('OTP expirado');
   }
+
+  if (storedOtp == inputOtp) {
+    await _markEmailAsVerified(email);
+    await prefs.remove('$_otpPrefix$email');
+    await prefs.remove('$_otpTimestampPrefix$email');
+
+    // ✅ Aquí recuperamos el perfil con su UUID
+    final profile = await getUserProfile(email: email);
+    return profile;
+  }
+
+  return null;
+}
+
 
   Future<void> _markEmailAsVerified(String email) async {
     await RenderDbClient.runTransaction((ctx) async {
