@@ -1,4 +1,4 @@
-import 'package:ezride/Feature/PAY_SUCCESS/Pay_Success-%3EPRESENTATION.dart';
+import 'package:ezride/Feature/PAY_SUCCESS/Pay_Success_PRESENTATION.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'widgets/appbar_RentVehicleWidgets.dart';

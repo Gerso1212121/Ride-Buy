@@ -1,5 +1,5 @@
 import 'dart:ui';
-import 'package:ezride/Feature/PROFILE_RENT/profile_model.-%3Emodel.dart';
+import 'package:ezride/Feature/PROFILE_RENT/profile_model_model.dart';
 import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
 import 'package:ezride/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';

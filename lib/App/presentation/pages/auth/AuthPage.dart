@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:ezride/App/presentation/pages/auth/EMAIL_OTP.dart';
-import 'package:ezride/Feature/Home/HOME/home_screen__PRESENTATION.dart';
+import 'package:ezride/Feature/Home/HOME/home_screen_PRESENTATION.dart';
 import 'package:ezride/Routers/router/MainComplete.dart';
 import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
 import 'package:ezride/Feature/AUTH/Auth_Header.dart';

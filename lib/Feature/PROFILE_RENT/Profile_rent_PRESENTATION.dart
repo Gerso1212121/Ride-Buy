@@ -1,5 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:ezride/Feature/PROFILE_RENT/profile_model.-%3Emodel.dart';
+import 'package:ezride/Feature/PROFILE_RENT/profile_model_model.dart';
 import 'package:ezride/Core/widgets/Buttons/Button_global.dart';
 import 'package:ezride/Core/widgets/Reviews/Reviews_card.dart';
 import 'package:ezride/Core/widgets/Reviews/Reviews_global.dart';

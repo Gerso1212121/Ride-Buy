@@ -1,11 +1,11 @@
 import 'package:ezride/Core/widgets/AppBarWidget/CustomAppBarWidget.dart';
 import 'package:ezride/Core/widgets/CustomBottonBar/CustomBottonBar.dart';
-import 'package:ezride/Feature/Home/Favoritos/Favoritos_screen__PRESENTATION.dart';
-import 'package:ezride/Feature/Home/HISTORY_AUTOS/HistoryAutos_screen__PRESENTATION.dart';
-import 'package:ezride/Feature/Home/HOME/home_screen__PRESENTATION.dart';
-import 'package:ezride/Feature/Home/Notifications/Notifications_screen__PRESENTATION_Optimizar.dart';
-import 'package:ezride/Feature/Home/PROFILE_USER/Profile_User__PRESENTATION.dart';
-import 'package:ezride/Feature/Home/SEARCH/Seach_screen__PRESENTATION.dart';
+import 'package:ezride/Feature/Home/Favoritos/Favoritos_screen_PRESENTATION.dart';
+import 'package:ezride/Feature/Home/HISTORY_AUTOS/HistoryAutos_screen_PRESENTATION.dart';
+import 'package:ezride/Feature/Home/HOME/home_screen_PRESENTATION.dart';
+import 'package:ezride/Feature/Home/Notifications/Notifications_screen_PRESENTATION_Optimizar.dart';
+import 'package:ezride/Feature/Home/PROFILE_USER/Profile_User_PRESENTATION.dart';
+import 'package:ezride/Feature/Home/SEARCH/Seach_screen_PRESENTATION.dart';
 import 'package:flutter/material.dart';
 import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
 
