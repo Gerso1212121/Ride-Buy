@@ -1,5 +1,5 @@
-import '../../../DOMAIN/Entities (ordenarlas en base a los features)/Auth/IADocumentAnalisis_Entities.dart';
-import '../../../../Core/enums/enums.dart';
+import 'package:ezride/App/DOMAIN/Entities/Auth/IADocumentAnalisis_Entities.dart';
+import 'package:ezride/Core/enums/enums.dart';
 
 class IADocumentAnalisisModel extends IAAnalisisResultEntities {
   IADocumentAnalisisModel({
@@ -22,53 +22,32 @@ class IADocumentAnalisisModel extends IAAnalisisResultEntities {
 
   factory IADocumentAnalisisModel.fromJson(Map<String, dynamic> json) {
     return IADocumentAnalisisModel(
-      id: json['id'] ?? 'no_id', // valor por defecto si es null
-      analysisType: MLAnalysisType.values.firstWhere(
-          (e) => e.toString() == 'MLAnalysisType.${json['analysisType']}',
-          orElse: () => MLAnalysisType.documentOcr), // fallback
-      sourceType: MLSourceType.values.firstWhere(
-          (e) => e.toString() == 'MLSourceType.${json['sourceType']}',
-          orElse: () => MLSourceType.camera), // fallback
-      sourceId: json['sourceId'] ?? 'no_source',
-      provider: json['provider'],
-      providerRef: json['providerRef'],
-      confidenceScore: (json['confidenceScore'] != null)
-          ? double.tryParse(json['confidenceScore'].toString())
-          : null,
-      isApproved: json['isApproved'] ?? false,
-      primaryFinding: json['primaryFinding'],
-      featuresUsed: (json['featuresUsed'] != null)
-          ? List<String>.from(json['featuresUsed'])
-          : null,
-      analysisDurationMs: json['analysisDurationMs'],
-      costUnits: (json['costUnits'] != null)
-          ? double.tryParse(json['costUnits'].toString())
-          : null,
-      findings: json['findings'] != null
-          ? Map<String, dynamic>.from(json['findings'])
-          : {},
-      recommendations: (json['recommendations'] != null)
-          ? List<String>.from(json['recommendations'])
-          : null,
-      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
+      id: DateTime.now().millisecondsSinceEpoch.toString(), // Genera un ID temporal
+      analysisType: MLAnalysisType.documentOcr,
+      sourceType: MLSourceType.documento,
+      sourceId: json["documentNumber"] ?? "unknown",
+
+      provider: "azure",
+      providerRef: json["docType"],
+
+      confidenceScore: 0.98, // Azure no manda confidence general, puedes poner promedio
+      isApproved: true,
+
+      primaryFinding: json["fullName"] ?? "Sin nombre detectado",
+
+      findings: {
+        "docType": json["docType"],
+        "fullName": json["fullName"],
+        "firstName": json["firstName"],
+        "lastName": json["lastName"],
+        "documentNumber": json["documentNumber"],
+        "dateOfBirth": json["dateOfBirth"],
+        "nationality": json["nationality"],
+        "dateOfExpiration": json["dateOfExpiration"],
+        "allFields": json["allFields"],
+      },
+
+      createdAt: DateTime.now(),
     );
   }
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'analysisType': analysisType.toString().split('.').last,
-        'sourceType': sourceType.toString().split('.').last,
-        'sourceId': sourceId,
-        'provider': provider,
-        'providerRef': providerRef,
-        'confidenceScore': confidenceScore,
-        'isApproved': isApproved,
-        'primaryFinding': primaryFinding,
-        'featuresUsed': featuresUsed,
-        'analysisDurationMs': analysisDurationMs,
-        'costUnits': costUnits,
-        'findings': findings,
-        'recommendations': recommendations,
-        'createdAt': createdAt.toIso8601String(),
-      };
 }

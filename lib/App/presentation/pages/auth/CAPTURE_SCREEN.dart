@@ -1,179 +1,213 @@
 import 'dart:io';
 import 'package:camera/camera.dart';
-import 'package:crypto/crypto.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-// Importa tus capas
-import 'package:ezride/App/DATA/datasources/Auth/IADocument_DataSourcers.dart';
-import 'package:ezride/App/DATA/repositories/Auth/IADocumentAnalisis_RepositoryData.dart';
-import 'package:ezride/App/DOMAIN/usecases/Auth/IADocumentAnalisis_UseCases.dart';
-
-class CaptureScreen extends StatefulWidget {
+class CameraCapturePage extends StatefulWidget {
+  final CameraDescription camera;
   final String perfilId;
-  const CaptureScreen({super.key, required this.perfilId});
+
+  const CameraCapturePage({
+    super.key,
+    required this.camera,
+    required this.perfilId,
+  });
 
   @override
-  State<CaptureScreen> createState() => _CaptureScreenState();
+  State<CameraCapturePage> createState() => _CameraCapturePageState();
 }
 
-class _CaptureScreenState extends State<CaptureScreen> {
-  CameraController? _controller;
-  bool _isInitialized = false;
-  bool _isCapturing = false;
-  bool _isUploading = false;
-
-  // Secuencia de pasos automáticos
-  final List<String> _steps = ['dui_front', 'dui_back', 'selfie'];
-  int _currentStep = 0;
+class _CameraCapturePageState extends State<CameraCapturePage>
+    with SingleTickerProviderStateMixin {
+  late CameraController _controller;
+  late AnimationController _animationController;
+  bool _isTaking = false;
 
   @override
   void initState() {
     super.initState();
-    _initCamera();
-  }
 
-  /// Inicializa la cámara
-  Future<void> _initCamera() async {
-    final cameras = await availableCameras();
+    // Inicializar cámara
     _controller = CameraController(
-      cameras.first,
-      ResolutionPreset.medium,
+      widget.camera,
+      ResolutionPreset.high,
       enableAudio: false,
     );
+    _initializeCamera();
 
-    await _controller!.initialize();
-    if (mounted) setState(() => _isInitialized = true);
+    // 🔵 Animación de pulso en el borde
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
   }
 
-  /// Captura y envía a Azure (vía backend)
-  Future<void> _captureAndUpload() async {
-    if (_controller == null || _isCapturing || _isUploading) return;
-
-    setState(() => _isCapturing = true);
-
+  Future<void> _initializeCamera() async {
     try {
-      // 1️⃣ Tomar la foto
-      final picture = await _controller!.takePicture();
-      final file = File(picture.path);
-
-      // 2️⃣ Generar hash SHA-256 (identificador único)
-      final bytes = await file.readAsBytes();
-      final hash = sha256.convert(bytes).toString();
-
-      setState(() => _isUploading = true);
-      final backendUrl = "http://192.168.101.9:3000";
-
-// 3️⃣ Inicializar DataSource
-      final datasource = IADocumentDataSource(
-        dio: Dio(),
-        backendUrl: backendUrl, // 🔹 Emulador Android apunta a tu PC
-      );
-
-      // 4️⃣ Crear repository y use case
-      final repository = IADocumentAnalisisRepositoryData(datasource);
-      final usecase = IADocumentAnalisisUseCases(repository);
-
-      // 5️⃣ Enviar a Azure a través del backend
-      final result =
-          await usecase.call(file, sourceId: hash, provider: 'camera');
-
-      // 6️⃣ Guardar metadatos (simulado)
-      await saveDocumentMetadata(
-        perfilId: widget.perfilId,
-        filePath: file.path,
-        tipoPerfil: _steps[_currentStep],
-        aiAnalysisId: result.id ?? "no_id",
-        ocrData: result.findings ?? {},
-      );
-
-      // 7️⃣ Mostrar mensaje de éxito
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                '${_steps[_currentStep]} capturado y subido correctamente ✅'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-
-      // 8️⃣ Avanzar al siguiente paso
-      _currentStep++;
-      if (_currentStep < _steps.length) {
-        await _controller!.dispose();
-        await _initCamera();
-      } else {
-        // Finalizar → Redirigir
-        if (mounted) GoRouter.of(context).go('/auth-complete');
-      }
+      await _controller.initialize();
+      if (mounted) setState(() {});
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Error al capturar/subir documento: $e')),
-        );
-      }
-    } finally {
-      setState(() {
-        _isCapturing = false;
-        _isUploading = false;
-      });
+      debugPrint('❌ Error inicializando cámara: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error al iniciar la cámara')),
+      );
     }
   }
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _controller.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
-  /// Interfaz visual
+  Future<void> _takePictureAndNavigate() async {
+    if (!_controller.value.isInitialized || _isTaking) return;
+    setState(() => _isTaking = true);
+
+    try {
+      final XFile file = await _controller.takePicture();
+      if (!mounted) return;
+
+      // 📷 Foto del DUI capturada
+      final duifrontPath = file.path;
+
+      // 📸 Obtiene la cámara frontal
+      final cameras = await availableCameras();
+      final frontCamera = cameras.firstWhere(
+        (cam) => cam.lensDirection == CameraLensDirection.front,
+      );
+
+      // 🚀 Navega a la cámara de selfie pasando el DUI y perfilId
+      context.push(
+        '/selfie-camera',
+        extra: {
+          'camera': frontCamera,
+          'perfilId': widget.perfilId,
+          'duiImagePath': duifrontPath, // 👈 aquí se envía la imagen del DUI
+        },
+      );
+    } catch (e) {
+      debugPrint('❌ Error al tomar foto del DUI: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo tomar la foto del documento')),
+      );
+    } finally {
+      if (mounted) setState(() => _isTaking = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (!_isInitialized) {
+    if (!_controller.value.isInitialized) {
       return const Scaffold(
         backgroundColor: Colors.black,
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
       );
     }
 
-    final currentType = _steps[_currentStep];
+    const aspectRatio = 85 / 55; // proporción del DUI
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          CameraPreview(_controller!),
+          // 📸 Vista previa de la cámara
+          CameraPreview(_controller),
 
-          // Marco visual para guiar captura
-          Align(
-            alignment: Alignment.center,
-            child: Container(
-              width: 280,
-              height: currentType == 'selfie' ? 280 : 200,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.greenAccent, width: 3),
-                color: Colors.black.withOpacity(0.25),
+          // 🌫️ Fondo oscuro con recorte central (tipo escáner)
+          _ScannerOverlay(aspectRatio: aspectRatio),
+
+          // 🔵 Marco azul animado
+          Center(
+            child: AspectRatio(
+              aspectRatio: aspectRatio,
+              child: AnimatedBuilder(
+                animation: _animationController,
+                builder: (context, child) {
+                  final thickness =
+                      3 + (_animationController.value * 2); // efecto de pulso
+                  return Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.blueAccent.withOpacity(0.8),
+                        width: thickness,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  );
+                },
               ),
             ),
           ),
 
-          // Botón de captura
+          // 🧾 Texto indicativo
+          Positioned(
+            bottom: 150,
+            left: 0,
+            right: 0,
+            child: Column(
+              children: const [
+                Text(
+                  'Coloca la parte frontal de tu DUI dentro del recuadro',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black54,
+                        offset: Offset(0, 1),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+
+          // 🔘 Botón de captura
           Positioned(
             bottom: 40,
             left: 0,
             right: 0,
             child: Center(
-              child: _isUploading
-                  ? const CircularProgressIndicator(color: Colors.greenAccent)
-                  : FloatingActionButton(
-                      backgroundColor: Colors.greenAccent,
-                      onPressed: _captureAndUpload,
-                      child: const Icon(Icons.camera_alt,
-                          size: 32, color: Colors.black),
-                    ),
+              child: GestureDetector(
+                onTap: _takePictureAndNavigate,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 4),
+                  ),
+                  child: Center(
+                    child: _isTaking
+                        ? const SizedBox(
+                            height: 25,
+                            width: 25,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 3,
+                            ),
+                          )
+                        : const Icon(Icons.camera_alt,
+                            color: Colors.white, size: 35),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // ❌ Botón cerrar
+          Positioned(
+            top: 40,
+            left: 20,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white, size: 30),
+              onPressed: () => context.pop(),
             ),
           ),
         ],
@@ -182,22 +216,60 @@ class _CaptureScreenState extends State<CaptureScreen> {
   }
 }
 
-/// Función simulada de guardado de metadatos (puedes reemplazarla por tu API real)
-Future<void> saveDocumentMetadata({
-  required String perfilId,
-  required String filePath,
-  required String tipoPerfil,
-  required String aiAnalysisId,
-  required Map<String, dynamic> ocrData,
-}) async {
-  debugPrint("""
-📄 Guardando metadatos:
-Perfil: $perfilId
-Archivo: $filePath
-Tipo: $tipoPerfil
-AI ID: $aiAnalysisId
-OCR: $ocrData
-""");
+/// 🌫️ Widget del overlay con un hueco transparente en forma de rectángulo
+class _ScannerOverlay extends StatelessWidget {
+  final double aspectRatio;
 
-  await Future.delayed(const Duration(milliseconds: 500));
+  const _ScannerOverlay({required this.aspectRatio});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final boxWidth = screenWidth * 0.85; // 85% del ancho
+        final boxHeight = boxWidth / aspectRatio;
+
+        return Stack(
+          children: [
+            // Capa oscura semitransparente
+            Container(color: Colors.black.withOpacity(0.6)),
+
+            // Recorte del área central (recuadro del documento)
+            Center(
+              child: ClipPath(
+                clipper: _RectClipper(
+                  width: boxWidth,
+                  height: boxHeight,
+                ),
+                child: Container(color: Colors.transparent),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _RectClipper extends CustomClipper<Path> {
+  final double width;
+  final double height;
+
+  _RectClipper({required this.width, required this.height});
+
+  @override
+  Path getClip(Size size) {
+    final path = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+    final hole = Rect.fromCenter(
+      center: Offset(size.width / 2, size.height / 2),
+      width: width,
+      height: height,
+    );
+    path.addRect(hole);
+    return Path.combine(PathOperation.difference, path, Path()..addRect(hole));
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }

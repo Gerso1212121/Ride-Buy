@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:ezride/App/DOMAIN/Entities%20(ordenarlas%20en%20base%20a%20los%20features)/Auth/PROFILE_user_entity.dart';
+import 'package:ezride/App/DOMAIN/Entities/Auth/PROFILE_user_entity.dart';
 import 'package:ezride/Core/enums/enums.dart';
 
 /// Modelo de datos para mapear los registros de la tabla `profiles`.
@@ -13,7 +13,7 @@ class AuthProfilesUserModel extends Profile {
     super.displayName,
     super.phone,
     super.verificationStatus,
-    super.passwd, // solo para compatibilidad interna
+    super.passwd,
     super.duiNumber,
     super.licenseNumber,
     super.dateOfBirth,
@@ -65,7 +65,7 @@ class AuthProfilesUserModel extends Profile {
       phone: map['phone'] as String?,
       verificationStatus:
           parseVerificationStatus(map['verification_status'] as String?),
-      passwd: map['password'] as String?,
+      passwd: map['passwd'] as String?,
       duiNumber: map['dui_number'] as String?,
       licenseNumber: map['license_number'] as String?,
       dateOfBirth: map['date_of_birth'] != null
@@ -97,6 +97,7 @@ class AuthProfilesUserModel extends Profile {
       'date_of_birth': dateOfBirth?.toIso8601String(),
       'email': email,
       'email_verified': emailVerified,
+      'passwd': passwd, // ✅ este faltaba
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -104,15 +105,24 @@ class AuthProfilesUserModel extends Profile {
     return map;
   }
 
-  // ------------------- JSON -------------------
-  factory AuthProfilesUserModel.fromJson(String source) =>
-      AuthProfilesUserModel.fromMap(json.decode(source));
-
-  @override
-  Map<String, dynamic> toJson() => toMap();
+  Map<String, dynamic> toDbMap({bool minimal = false}) {
+    if (minimal) {
+      return {
+        'id': id,
+        'role': role.name,
+        'email': email,
+        'passwd': passwd,
+        'verification_status': verificationStatus.name,
+        'email_verified': emailVerified,
+        'created_at': createdAt.toIso8601String(),
+        'updated_at': updatedAt.toIso8601String(),
+      };
+    } else {
+      return toMap();
+    }
+  }
 
   // ------------------- COPYWITH -------------------
-  @override
   AuthProfilesUserModel copyWith({
     String? id,
     UserRole? role,
@@ -164,6 +174,25 @@ class AuthProfilesUserModel extends Profile {
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
       token: token,
+    );
+  }
+
+  // ------------------- TO ENTITY -------------------
+  Profile toEntity() {
+    return Profile(
+      id: id,
+      role: role,
+      displayName: displayName,
+      phone: phone,
+      verificationStatus: verificationStatus,
+      email: email,
+      passwd: passwd,
+      duiNumber: duiNumber,
+      licenseNumber: licenseNumber,
+      dateOfBirth: dateOfBirth,
+      emailVerified: emailVerified,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
     );
   }
 

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ezride/App/DATA/models/Auth/AuthProfilesUser_Model.dart';
-import 'package:ezride/App/DOMAIN/Entities%20(ordenarlas%20en%20base%20a%20los%20features)/Auth/PROFILE_user_entity.dart';
+import 'package:ezride/App/DOMAIN/Entities/Auth/PROFILE_user_entity.dart';
 
 class SessionManager {
   static const _sessionKey = 'user_session';

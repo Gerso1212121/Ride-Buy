@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:ezride/App/DATA/repositories/Auth/ProfileUser_RepositoryData.dart';
-import 'package:ezride/App/DOMAIN/Entities%20(ordenarlas%20en%20base%20a%20los%20features)/Auth/PROFILE_user_entity.dart';
+import 'package:ezride/App/DOMAIN/Entities/Auth/PROFILE_user_entity.dart';
 import 'package:ezride/App/DOMAIN/usecases/Auth/Auth_UseCase.dart';
 import 'package:ezride/Core/sessions/session_manager.dart';
 import 'package:ezride/Feature/Home/PROFILE_USER/widget/ProfileUser_Actions_widget.dart';

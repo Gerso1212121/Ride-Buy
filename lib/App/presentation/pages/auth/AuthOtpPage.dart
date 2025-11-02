@@ -1,3 +1,4 @@
+import 'package:camera/camera.dart';
 import 'package:ezride/Core/sessions/session_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,11 +7,13 @@ import '../../../DOMAIN/usecases/Auth/Auth_UseCase.dart';
 
 class AuthOtpPage extends StatefulWidget {
   final String email;
+  final String password; // 👈 nuevo
   final ProfileUserUseCaseGlobal profileUserUseCaseGlobal;
 
   const AuthOtpPage({
     super.key,
     required this.email,
+    required this.password, // 👈 nuevo
     required this.profileUserUseCaseGlobal,
   });
 
@@ -85,9 +88,15 @@ class _AuthOtpPageState extends State<AuthOtpPage> {
         if (!mounted) return;
 
         // ✅ Navegar a la siguiente pantalla con GoRouter
-        context.go(
+        final cameras = await availableCameras(); // obtiene todas las cámaras
+        final firstCamera = cameras.first; // usa la cámara trasera, normalmente
+
+        context.push(
           '/capture-document',
-          extra: {'perfilId': profile.id},
+          extra: {
+            'perfilId': profile.id,
+            'camera': firstCamera, // 👈 importante
+          },
         );
       } else {
         _showError(
@@ -172,9 +181,9 @@ class _AuthOtpPageState extends State<AuthOtpPage> {
       print('📤 Reenviando OTP...');
 
       // Registrar nuevamente para generar nuevo OTP
-      await widget.profileUserUseCaseGlobal.repository.registerUser(
+      await widget.profileUserUseCaseGlobal.registerPending(
         email: widget.email,
-        password: 'temp', // Esto no afectará la contraseña ya guardada
+        password: widget.password, // ✅ contraseña original
       );
 
       if (!mounted) return;

@@ -1,6 +1,8 @@
+import 'package:camera/camera.dart';
 import 'package:ezride/App/DATA/datasources/Auth/IADocument_DataSourcers.dart';
 import 'package:ezride/App/presentation/pages/auth/AuthComplete.dart';
 import 'package:ezride/App/presentation/pages/auth/AuthPage.dart';
+import 'package:ezride/App/presentation/pages/auth/CAPTURESELFIE_SCREEN.dart';
 import 'package:ezride/App/presentation/pages/auth/UPLOAD_DOCUMENT.dart';
 import 'package:ezride/App/presentation/pages/auth/CAPTURE_SCREEN.dart';
 import 'package:ezride/Feature/Home/Chat/Chat_screen_PRESENTATION.dart';
@@ -75,23 +77,42 @@ class AppRouter {
 
       // 🌟 RUTAS DE DOCUMENTOS / VERIFICACIÓN
       GoRoute(
-        path: '/upload-document',
-        name: 'upload-document',
-        builder: (context, state) {
-          final extras = state.extra as Map<String, dynamic>? ?? {};
-          final perfilId = extras['perfilId'] ?? '';
-          return UploadDocumentPage(perfilId: perfilId);
-        },
-      ),
-      GoRoute(
         path: '/capture-document',
         name: 'capture-document',
         builder: (context, state) {
           final extras = state.extra as Map<String, dynamic>? ?? {};
-          final perfilId = extras['perfilId'] ?? '';
+          final camera = extras['camera'] as CameraDescription;
+          final perfilId = extras['perfilId'] as String? ?? '';
 
-          // No necesitamos dataSource ni sourceType aquí
-          return CaptureScreen(perfilId: perfilId);
+          return CameraCapturePage(camera: camera, perfilId: perfilId);
+        },
+      ),
+      GoRoute(
+        path: '/selfie-camera',
+        name: 'selfie-camera',
+        builder: (context, state) {
+          final extras = state.extra as Map<String, dynamic>? ?? {};
+          final perfilId = extras['perfilId'] ?? '';
+          final camera = extras['camera'] as CameraDescription;
+          final duiImagePath =
+              extras['duiImagePath'] as String?; // 👈 nuevo parámetro
+
+          return CameraSelfiePage(
+            camera: camera,
+            perfilId: perfilId,
+            duiImagePath: duiImagePath,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/upload-document',
+        builder: (context, state) {
+          final data = state.extra as Map<String, dynamic>;
+          return UploadDocumentPage(
+            perfilId: data['perfilId'] as String,
+            duiImagePath: data['duiImagePath'] as String,
+            selfiePath: data['selfiePath'] as String,
+          );
         },
       ),
     ],

@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:ezride/App/presentation/pages/auth/EMAIL_OTP.dart';
+import 'package:ezride/App/presentation/pages/auth/AuthOtpPage.dart';
 import 'package:ezride/Feature/Home/HOME/home_screen_PRESENTATION.dart';
 import 'package:ezride/Routers/router/MainComplete.dart';
 import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
@@ -150,41 +150,63 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
     final password = _model.passwordCreateTextController.text.trim();
     final confirmPassword = _model.passwordConfirmTextController.text.trim();
 
+    // Validaciones de campos vacíos
     if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       _showSnackBar(context, 'Por favor completa todos los campos');
       return;
     }
 
+    // Validar formato de email básico
+    if (!email.contains('@') || !email.contains('.')) {
+      _showSnackBar(context, 'Correo electrónico no válido');
+      return;
+    }
+
+    // Confirmación de contraseña
     if (password != confirmPassword) {
       _showSnackBar(context, 'Las contraseñas no coinciden');
       return;
     }
 
+    // Longitud mínima
     if (password.length < 6) {
       _showSnackBar(context, 'La contraseña debe tener al menos 6 caracteres');
       return;
     }
 
+    // Mostrar loading
     _showLoadingDialog(context, 'Creando tu cuenta...');
 
     try {
-      final profile = await profileUserUseCaseGlobal.register(
+      // Llamar al caso de uso — ahora devuelve un RegisterPending
+      final pending = await profileUserUseCaseGlobal.registerPending(
         email: email,
         password: password,
       );
 
       if (!mounted) return;
 
+      // Cerrar el diálogo de carga
+      Navigator.of(context, rootNavigator: true).pop();
+
+      // Mostrar mensaje informativo
+      _showSnackBar(
+        context,
+        'Se ha enviado un código OTP al correo ${pending.email}',
+      );
+
       // Navegar a la pantalla OTP
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => AuthOtpPage(
-            email: email,
+            email: pending.email,
+            password: password, // 👈 aquí
             profileUserUseCaseGlobal: profileUserUseCaseGlobal,
           ),
         ),
       );
     } catch (e) {
+      // Cerrar el loading en caso de error
       if (mounted) Navigator.of(context, rootNavigator: true).pop();
       _showErrorDialog(context, 'Error al registrar', e.toString());
     }

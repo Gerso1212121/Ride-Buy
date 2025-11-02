@@ -1,4 +1,5 @@
-import 'package:ezride/App/DOMAIN/Entities%20(ordenarlas%20en%20base%20a%20los%20features)/Auth/PROFILE_user_entity.dart';
+import 'package:ezride/App/DOMAIN/Entities/Auth/PROFILE_user_entity.dart';
+import 'package:ezride/App/DOMAIN/Entities/Auth/REGISTER_PENDING_user_entity.dart';
 import 'package:ezride/App/DOMAIN/repositories/Auth/ProfileUser_RepositoryDomain.dart';
 
 class ProfileUserUseCaseGlobal {
@@ -9,7 +10,8 @@ class ProfileUserUseCaseGlobal {
   // ------------------------------
   // LOGIN
   // ------------------------------
-  Future<Profile> login({required String email, required String password}) async {
+  Future<Profile> login(
+      {required String email, required String password}) async {
     if (email.trim().isEmpty || password.trim().isEmpty) {
       throw Exception('Email y contraseña no pueden estar vacíos');
     }
@@ -29,20 +31,32 @@ class ProfileUserUseCaseGlobal {
   // ------------------------------
   // REGISTER
   // ------------------------------
-  Future<Profile> register({required String email, required String password}) async {
+  Future<RegisterPending> registerPending({
+    required String email,
+    required String password,
+  }) async {
     if (email.trim().isEmpty || password.trim().isEmpty) {
       throw Exception('Email y contraseña no pueden estar vacíos');
     }
 
+    // Validación simple de formato
+    if (!email.contains('@') || !email.contains('.')) {
+      throw Exception('Formato de correo inválido');
+    }
+
     try {
-      final profile = await repository.registerUser(
+      final pending = await repository.registerPendingUser(
         email: email.trim(),
         password: password.trim(),
       );
-      return profile;
+
+      // Aquí podrías loguear métricas o registrar eventos de analytics, si querés.
+      print('✅ Usuario pendiente creado y OTP enviado: ${pending.email}');
+
+      return pending;
     } catch (e) {
-      print('❌ Error registrando usuario $email: $e');
-      rethrow;
+      print('❌ Error registrando usuario pendiente $email: $e');
+      rethrow; // Se deja a la capa de presentación manejar el mensaje
     }
   }
 
