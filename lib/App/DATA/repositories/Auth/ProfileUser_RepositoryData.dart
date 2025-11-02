@@ -267,12 +267,117 @@ class ProfileUserRepositoryData implements ProfileUserRepositoryDomain {
     final message = Message()
       ..from = Address(smtpEmail, 'EZRide')
       ..recipients.add(email)
-      ..subject = 'Verificación de cuenta EZRide'
+      ..subject = 'RIDE&BUY OTP Verificacion'
       ..html = '''
-        <h2>Tu código de verificación:</h2>
-        <h1>$otp</h1>
-        <p>Expira en 10 minutos.</p>
-      ''';
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Verificación de cuenta - EZRide</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background-color: #f5f7fa;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 520px;
+      margin: 40px auto;
+      background-color: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .header {
+      background-color: #007bff;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: 1px;
+    }
+    .content {
+      padding: 30px;
+      color: #333;
+    }
+    .content h2 {
+      font-size: 20px;
+      margin-bottom: 10px;
+      color: #007bff;
+    }
+    .otp-box {
+      text-align: center;
+      background-color: #f0f4ff;
+      border: 1px dashed #007bff;
+      padding: 15px;
+      border-radius: 10px;
+      margin: 20px 0;
+    }
+    .otp-code {
+      font-size: 28px;
+      font-weight: bold;
+      letter-spacing: 4px;
+      color: #007bff;
+      user-select: all;
+    }
+    .copy-button {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 10px 18px;
+      background-color: #007bff;
+      color: white;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 14px;
+      transition: background-color 0.3s;
+    }
+    .copy-button:hover {
+      background-color: #0056b3;
+    }
+    .footer {
+      background-color: #f1f1f1;
+      text-align: center;
+      padding: 15px;
+      font-size: 12px;
+      color: #777;
+    }
+    .car-icon {
+      width: 40px;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img class="car-icon" src="https://cdn-icons-png.flaticon.com/512/743/743922.png" alt="Car Icon">
+      <h1>EZRide Rent a Car</h1>
+    </div>
+
+    <div class="content">
+      <h2>Verifica tu cuenta</h2>
+      <p>Hola 👋,</p>
+      <p>Gracias por registrarte en <b>EZRide</b>. Para continuar con tu proceso de verificación y activar tu cuenta, usa el siguiente código:</p>
+
+      <div class="otp-box">
+        <div class="otp-code" id="otp">$otp</div>
+        <a href="#" class="copy-button" onclick="navigator.clipboard.writeText('$otp'); alert('Código copiado'); return false;">📋 Copiar código</a>
+      </div>
+
+      <p>Este código expira en <b>10 minutos</b>. Si no solicitaste esta verificación, puedes ignorar este mensaje.</p>
+    </div>
+
+    <div class="footer">
+      © ${DateTime.now().year} EZRide Rent a Car — Tu viaje comienza aquí 🚗
+    </div>
+  </div>
+</body>
+</html>
+''';
 
     await send(message, smtpServer);
   }
@@ -281,4 +386,40 @@ class ProfileUserRepositoryData implements ProfileUserRepositoryDomain {
     const sql = 'DELETE FROM register_pending WHERE email = @email';
     await RenderDbClient.query(sql, parameters: {'email': email});
   }
+
+@override
+Future<void> updateUserProfile({
+  required String id,
+  required String displayName,
+  required String phone,
+  required String duiNumber,
+  required String dateOfBirth,
+}) async {
+  try {
+    const sql = '''
+      UPDATE profiles
+      SET
+        display_name = @display_name,
+        phone = @phone,
+        dui_number = @dui_number,
+        date_of_birth = @date_of_birth,
+        updated_at = now()
+      WHERE id = @id
+    ''';
+
+    await RenderDbClient.query(sql, parameters: {
+      'id': id,
+      'display_name': displayName,
+      'phone': phone,
+      'dui_number': duiNumber,
+      'date_of_birth': dateOfBirth,
+    });
+
+    print('✅ Perfil actualizado correctamente en la base de datos.');
+  } catch (e) {
+    print('❌ Error al actualizar el perfil: $e');
+    rethrow;
+  }
+}
+
 }

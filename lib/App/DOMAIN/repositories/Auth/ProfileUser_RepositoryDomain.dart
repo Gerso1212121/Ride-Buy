@@ -29,4 +29,13 @@ abstract class ProfileUserRepositoryDomain {
 
   // 💾 Obtener sesión local almacenada (por token)
   Future<AuthProfilesUserModel?> getLocalSession();
+
+  //Update Profile
+  Future<void> updateUserProfile({
+    required String id,
+    required String displayName,
+    required String phone,
+    required String duiNumber,
+    required String dateOfBirth
+  });
 }
