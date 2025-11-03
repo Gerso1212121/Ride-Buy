@@ -31,11 +31,13 @@ abstract class ProfileUserRepositoryDomain {
   Future<AuthProfilesUserModel?> getLocalSession();
 
   //Update Profile
-  Future<void> updateUserProfile({
-    required String id,
-    required String displayName,
-    required String phone,
-    required String duiNumber,
-    required String dateOfBirth
-  });
+Future<void> updateUserProfile({
+  required String id,
+  required String displayName,
+  required String phone,
+  required String duiNumber,
+  required String dateOfBirth,
+  required String verificationStatus,
+});
+
 }

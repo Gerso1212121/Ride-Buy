@@ -1,3 +1,4 @@
+import 'package:camera/camera.dart';
 import 'package:dio/dio.dart';
 import 'package:ezride/App/presentation/pages/auth/AuthOtpPage.dart';
 import 'package:ezride/Feature/Home/HOME/home_screen_PRESENTATION.dart';
@@ -132,15 +133,42 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
         password: password,
       );
 
-      if (mounted) Navigator.of(context).pop();
-      _navigateToAuthComplete(context);
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Cierra loading
+
+      final status = profile.verificationStatus.name;
+
+      switch (status) {
+        case 'verificado':
+          context.go('/main');
+          break;
+
+        case 'pendiente':
+        case 'rechazado':
+          final cameras = await availableCameras();
+          final backCamera = cameras.firstWhere(
+            (cam) => cam.lensDirection == CameraLensDirection.back,
+          );
+          if (!mounted) return;
+          context.go('/capture-document', extra: {
+            'camera': backCamera,
+            'perfilId': profile.id,
+          });
+          break;
+
+        case 'en_revision':
+          _showSnackBar(
+            context,
+            'Tu identidad está siendo verificada. Te notificaremos pronto.',
+          );
+          break;
+
+        default:
+          _showSnackBar(context, 'Estado de verificación inválido.');
+      }
     } catch (e) {
       if (mounted) Navigator.of(context).pop();
-      _showErrorDialog(
-        context,
-        'Error al iniciar sesión',
-        _getErrorMessage(e),
-      );
+      _showErrorDialog(context, 'Error al iniciar sesión', e.toString());
     }
   }
 
@@ -196,14 +224,13 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
       );
 
       // Navegar a la pantalla OTP
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => AuthOtpPage(
-            email: pending.email,
-            password: password, // 👈 aquí
-            profileUserUseCaseGlobal: profileUserUseCaseGlobal,
-          ),
-        ),
+      context.go(
+        '/otp',
+        extra: {
+          'email': pending.email,
+          'password': password,
+          'profileUserUseCaseGlobal': profileUserUseCaseGlobal,
+        },
       );
     } catch (e) {
       // Cerrar el loading en caso de error

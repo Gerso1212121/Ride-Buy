@@ -30,7 +30,7 @@ class _MainShellState extends State<MainShell> {
     const ReservasWidget(),
     const SearchAutos(),
     const FavCards(),
-    const ProfileUser(),
+     ProfileUser(),
     const NotificacionesWidget(),
   ];
 

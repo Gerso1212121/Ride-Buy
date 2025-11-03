@@ -1,6 +1,7 @@
 import 'package:ezride/App/DOMAIN/Entities/Auth/PROFILE_user_entity.dart';
 import 'package:ezride/App/DOMAIN/Entities/Auth/REGISTER_PENDING_user_entity.dart';
 import 'package:ezride/App/DOMAIN/repositories/Auth/ProfileUser_RepositoryDomain.dart';
+import 'package:ezride/Core/sessions/session_manager.dart';
 
 class ProfileUserUseCaseGlobal {
   final ProfileUserRepositoryDomain repository;
@@ -10,23 +11,33 @@ class ProfileUserUseCaseGlobal {
   // ------------------------------
   // LOGIN
   // ------------------------------
-  Future<Profile> login(
-      {required String email, required String password}) async {
-    if (email.trim().isEmpty || password.trim().isEmpty) {
-      throw Exception('Email y contraseña no pueden estar vacíos');
-    }
-
-    try {
-      final profile = await repository.loginUser(
-        email: email.trim(),
-        password: password.trim(),
-      );
-      return profile;
-    } catch (e) {
-      print('❌ Error iniciando sesión para $email: $e');
-      rethrow;
-    }
+Future<Profile> login({
+  required String email,
+  required String password,
+}) async {
+  if (email.trim().isEmpty || password.trim().isEmpty) {
+    throw Exception('Email y contraseña no pueden estar vacíos');
   }
+
+  try {
+    final profile = await repository.loginUser(
+      email: email.trim(),
+      password: password.trim(),
+    );
+
+    // ✅ Guardamos sesión local para usar datos del usuario
+    await SessionManager.setProfile(profile);
+
+    // ✅ Retornamos siempre el perfil
+    // La UI decidirá si el usuario ya está verificado o no
+    return profile;
+
+  } catch (e) {
+    print('❌ Error iniciando sesión para $email: $e');
+    rethrow;
+  }
+}
+
 
   // ------------------------------
   // REGISTER

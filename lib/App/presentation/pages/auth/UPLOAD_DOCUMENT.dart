@@ -3,13 +3,15 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lottie/lottie.dart';
+import 'package:percent_indicator/circular_percent_indicator.dart';
 
 // 🧩 Capas de datos y dominio
 import 'package:ezride/App/DATA/datasources/Auth/IADocument_DataSourcers.dart';
 import 'package:ezride/App/DATA/repositories/Auth/IADocumentAnalisis_RepositoryData.dart';
+import 'package:ezride/App/DATA/repositories/Auth/ProfileUser_RepositoryData.dart';
 import 'package:ezride/App/DOMAIN/usecases/Auth/IADocumentAnalisis_UseCases.dart';
-import 'package:ezride/App/DOMAIN/Entities/Auth/IADocumentAnalisis_Entities.dart';
-import 'package:ezride/App/DOMAIN/Entities/Auth/aws_rekognition_result.dart';
 
 class UploadDocumentPage extends StatefulWidget {
   final String perfilId;
@@ -28,276 +30,314 @@ class UploadDocumentPage extends StatefulWidget {
 }
 
 class _UploadDocumentPageState extends State<UploadDocumentPage> {
-  bool _isLoading = false;
-  String? _status;
-  AwsRekognitionResult? _result;
-  IAAnalisisResultEntities? _analisisResult;
-
   late IADocumentAnalisisUseCases usecase;
+  late ProfileUserRepositoryData profileRepo;
+
+  bool _isProcessing = true;
+  int _remainingSeconds = 300; // 5 minutos
+  double _progress = 0.0;
 
   @override
   void initState() {
     super.initState();
-    _initializeUsecase();
+    _initializeAndVerify();
+    _startTimer();
   }
 
-  Future<void> _initializeUsecase() async {
-    try {
-      print("🔧 Cargando variables .env...");
-      await dotenv.load(fileName: ".env");
+  void _startTimer() {
+    Future.delayed(const Duration(seconds: 1), () {
+      if (!mounted) return;
+      if (_remainingSeconds > 0) {
+        setState(() {
+          _remainingSeconds--;
+          _progress = 1 - (_remainingSeconds / 300);
+        });
+        _startTimer();
+      }
+    });
+  }
 
-      print("🧩 Inicializando capas de datos...");
-      final datasource = IADocumentDataSource(dio: Dio());
+  String _formatTime(int seconds) {
+    final min = (seconds ~/ 60).toString().padLeft(2, '0');
+    final sec = (seconds % 60).toString().padLeft(2, '0');
+    return "$min:$sec";
+  }
+
+  Future<void> _initializeAndVerify() async {
+    try {
+      await dotenv.load(fileName: ".env");
+      final dio = Dio();
+      final datasource = IADocumentDataSource(dio: dio);
       final repository = IADocumentAnalisisRepositoryData(datasource);
       usecase = IADocumentAnalisisUseCases(repository);
+      profileRepo = ProfileUserRepositoryData(dio: dio);
 
-      print("✅ UseCase inicializado correctamente.");
-    } catch (e) {
-      print("❌ Error al inicializar el usecase: $e");
+      final analisisData = await _uploadAndVerify();
+
+      // ✅ Verificamos si el usuario tiene la edad mínima (18 años)
+      final dateOfBirthStr = analisisData['dateOfBirth'];
+      if (dateOfBirthStr != null && !_isAdult(dateOfBirthStr)) {
+        throw Exception("El usuario debe ser mayor de 18 años para continuar.");
+      }
+
+      if (!mounted) return;
+      setState(() => _isProcessing = false);
+
+      // 🔁 Redirige al formulario con los datos del DUI prellenados
+      await Future.delayed(const Duration(seconds: 1));
+      context.go(
+        '/personal-data',
+        extra: {
+          'fullName': analisisData['fullName'],
+          'duiNumber': analisisData['documentNumber'],
+          'dateOfBirth': analisisData['dateOfBirth'],
+        },
+      );
+    } catch (e, stack) {
+      debugPrint("❌ Error en verificación: $e\n$stack");
+      _goToErrorScreen(e.toString());
     }
   }
 
-  Future<void> _uploadAndVerify() async {
-    print("🚀 Iniciando proceso de subida, análisis y verificación...");
-    setState(() {
-      _isLoading = true;
-      _status = "Subiendo archivos a AWS...";
-    });
-
+  bool _isAdult(String dateOfBirthStr) {
     try {
-      // 1️⃣ Obtener URLs presigned
-      final filenames = [
-        "document_${DateTime.now().millisecondsSinceEpoch}.jpg",
-        "selfie_${DateTime.now().millisecondsSinceEpoch}.jpg"
-      ];
-
-      final presigned =
-          await usecase.getPresignedUrls(widget.perfilId, filenames);
-
-      if (presigned.length < 2) {
-        throw Exception("No se recibieron URLs presigned válidas.");
-      }
-
-      final documentKey = presigned[0]['key']!;
-      final documentUrl = presigned[0]['url']!;
-      final selfieKey = presigned[1]['key']!;
-      final selfieUrl = presigned[1]['url']!;
-
-      // 2️⃣ Subir imágenes
-      setState(() => _status = "Subiendo documento...");
-      await usecase.uploadToS3(documentUrl, File(widget.duiImagePath));
-
-      setState(() => _status = "Subiendo selfie...");
-      await usecase.uploadToS3(selfieUrl, File(widget.selfiePath));
-
-      // 3️⃣ Analizar el documento (Azure Document Intelligence)
-      setState(() => _status = "Analizando documento...");
-      print("🧠 Analizando documento con IA...");
-
-      final analisisResult = await usecase.call(
-        File(widget.duiImagePath),
-        sourceId: widget.perfilId,
-        provider: "azure",
-      );
-
-      print("📄 Resultado del análisis:");
-      print("Tipo de documento: ${analisisResult.findings["docType"]}");
-      print("Nombre completo: ${analisisResult.findings["fullName"]}");
-      print("Documento #: ${analisisResult.findings["documentNumber"]}");
-
-      setState(() {
-        _analisisResult = analisisResult;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              "Documento analizado correctamente: ${analisisResult.findings["fullName"] ?? "Sin nombre"}"),
-          backgroundColor: Colors.blueAccent,
-        ),
-      );
-
-      // 4️⃣ Verificar identidad
-      setState(() => _status = "Verificando identidad...");
-      final result = await usecase.verifyIdentity(
-        perfilId: widget.perfilId,
-        selfieKey: selfieKey,
-        documentKey: documentKey,
-      );
-
-      setState(() {
-        _result = result;
-        _isLoading = false;
-        _status = result.result == 'matched'
-            ? "✅ Identidad verificada correctamente."
-            : "❌ No se pudo verificar la identidad.";
-      });
-
-      print("🎯 Proceso completado correctamente.");
-    } catch (e, stack) {
-      print("❌ Error durante el proceso:");
-      print("Error: $e");
-      print("Stacktrace: $stack");
-      setState(() {
-        _isLoading = false;
-        _status = "❌ Error: ${e.toString()}";
-      });
+      final birthDate = DateTime.parse(dateOfBirthStr);
+      final now = DateTime.now();
+      final age = now.year - birthDate.year;
+      final hasHadBirthdayThisYear = (now.month > birthDate.month) ||
+          (now.month == birthDate.month && now.day >= birthDate.day);
+      final actualAge = hasHadBirthdayThisYear ? age : age - 1;
+      return actualAge >= 18;
+    } catch (_) {
+      return false; // si el formato no es válido
     }
+  }
+
+  Future<Map<String, dynamic>> _uploadAndVerify() async {
+    final filenames = [
+      "document_${DateTime.now().millisecondsSinceEpoch}.jpg",
+      "selfie_${DateTime.now().millisecondsSinceEpoch}.jpg"
+    ];
+
+    final presigned =
+        await usecase.getPresignedUrls(widget.perfilId, filenames);
+    final documentKey = presigned[0]['key']!;
+    final documentUrl = presigned[0]['url']!;
+    final selfieKey = presigned[1]['key']!;
+    final selfieUrl = presigned[1]['url']!;
+
+    await usecase.uploadToS3(documentUrl, File(widget.duiImagePath));
+    await usecase.uploadToS3(selfieUrl, File(widget.selfiePath));
+
+    final analisis = await usecase.call(
+      File(widget.duiImagePath),
+      sourceId: widget.perfilId,
+      provider: "azure",
+    );
+
+    final fullName = analisis.findings["fullName"];
+    final documentNumber = analisis.findings["documentNumber"];
+    final dateOfBirth = analisis.findings["dateOfBirth"];
+
+    if (fullName == null || documentNumber == null || dateOfBirth == null) {
+      throw Exception("Datos del documento incompletos o inválidos.");
+    }
+
+    final result = await usecase.verifyIdentity(
+      perfilId: widget.perfilId,
+      selfieKey: selfieKey,
+      documentKey: documentKey,
+    );
+
+    if (result.result != "Matched") {
+      throw Exception(
+          "La comparación facial falló (${result.bestSimilarity.toStringAsFixed(2)}%).");
+    }
+
+    return {
+      'fullName': fullName,
+      'documentNumber': documentNumber,
+      'dateOfBirth': dateOfBirth,
+    };
+  }
+
+  void _goToErrorScreen(String reason) {
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.go(
+        '/error-verificacion',
+        extra: {
+          'reason': reason,
+          'reintento': {
+            'perfilId': widget.perfilId,
+            'duiImagePath': widget.duiImagePath,
+            'selfiePath': widget.selfiePath,
+          },
+        },
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Subida y Verificación"),
-        backgroundColor: Colors.blueAccent,
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: _isProcessing
+            ? _buildVerificationProgress()
+            : const Center(
+                child: Icon(Icons.check_circle, color: Colors.green, size: 80),
+              ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Center(
-          child: SingleChildScrollView(
+    );
+  }
+
+  /// 🎨 Pantalla de progreso visual
+  Widget _buildVerificationProgress() {
+    return SafeArea(
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // 🖼️ Vista previa
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _previewImage(widget.duiImagePath, "Documento"),
-                    _previewImage(widget.selfiePath, "Selfie"),
-                  ],
-                ),
-                const SizedBox(height: 30),
-
-                if (_isLoading)
-                  Column(
-                    children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 16),
-                      Text(
-                        _status ?? "Procesando...",
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    ],
-                  )
-                else ...[
-                  if (_status != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 20),
-                      child: Text(
-                        _status!,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: _status!.contains("Error")
-                              ? Colors.red
-                              : Colors.green,
-                        ),
-                      ),
-                    ),
-
-                  ElevatedButton.icon(
-                    onPressed: _uploadAndVerify,
-                    icon: const Icon(Icons.cloud_upload),
-                    label: const Text("Subir y Verificar Identidad"),
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                      backgroundColor: Colors.blueAccent,
+                // 🔒 Ícono de seguridad
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF105DFB), Color(0xFF8AC7FF)],
+                      begin: Alignment.topRight,
+                      end: Alignment.bottomLeft,
                     ),
                   ),
+                  child: const Icon(Icons.lock_rounded,
+                      size: 60, color: Colors.white),
+                ),
+                const SizedBox(height: 24),
 
-                  const SizedBox(height: 30),
+                Text(
+                  'Verificando tu identidad',
+                  style: GoogleFonts.lato(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Estamos procesando tu información de forma segura.\n'
+                  'Por favor, no cierres la aplicación.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.lato(
+                    color: Colors.grey.shade600,
+                    fontSize: 16,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 40),
 
-                  // 🧠 Resultado de análisis
-                  if (_analisisResult != null)
-                    Card(
-                      color: Colors.grey[100],
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                // Indicador circular + tiempo restante
+                Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x1A000000),
+                        blurRadius: 12,
+                        offset: Offset(0, 4),
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "📄 Resultado del análisis del documento:",
-                              style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                                "🔹 Tipo: ${_analisisResult!.findings["docType"] ?? "Desconocido"}"),
-                            Text(
-                                "🔹 Nombre completo: ${_analisisResult!.findings["fullName"] ?? "N/A"}"),
-                            Text(
-                                "🔹 Documento #: ${_analisisResult!.findings["documentNumber"] ?? "N/A"}"),
-                            Text(
-                                "🔹 Nacionalidad: ${_analisisResult!.findings["nationality"] ?? "N/A"}"),
-                            Text(
-                                "🔹 Nacimiento: ${_analisisResult!.findings["dateOfBirth"] ?? "N/A"}"),
-                            Text(
-                                "🔹 Expira: ${_analisisResult!.findings["dateOfExpiration"] ?? "N/A"}"),
-                          ],
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularPercentIndicator(
+                        radius: 50.0,
+                        lineWidth: 8.0,
+                        percent: _progress,
+                        animation: true,
+                        progressColor: const Color(0xFF105DFB),
+                        backgroundColor: const Color(0xFFE0E3E7),
+                        circularStrokeCap: CircularStrokeCap.round,
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        _formatTime(_remainingSeconds),
+                        style: GoogleFonts.lato(
+                          fontSize: 22,
+                          color: const Color(0xFF105DFB),
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ),
-
-                  const SizedBox(height: 20),
-
-                  // 📊 Resultado de Rekognition
-                  if (_result != null)
-                    Card(
-                      color: Colors.grey[100],
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "📊 Resultado AWS Rekognition:",
-                              style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                                "🔹 Similitud más alta: ${_result!.bestSimilarity.toStringAsFixed(2)}%"),
-                            Text(
-                                "🔹 Rostros no coincidentes: ${_result!.unmatchedFaces}"),
-                            Text("🔹 Estado: ${_result!.result}"),
-                          ],
+                      const SizedBox(height: 4),
+                      Text(
+                        'Tiempo estimado',
+                        style: GoogleFonts.lato(
+                          color: Colors.grey.shade700,
+                          fontSize: 14,
                         ),
                       ),
-                    ),
-                ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 40),
+
+                // ℹ️ Mensaje informativo
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0x4C105DFB),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF105DFB)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.info_rounded,
+                          color: Color(0xFF105DFB), size: 24),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'No cierres la aplicación durante el proceso. '
+                          'Esto podría interrumpir la validación de tu identidad.',
+                          style: GoogleFonts.lato(
+                            color: Colors.black87,
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 40),
+                Text(
+                  'Verificación en progreso...',
+                  style: GoogleFonts.lato(
+                    color: Colors.grey.shade700,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  'Mantén la aplicación abierta',
+                  style: GoogleFonts.lato(
+                    color: Colors.grey.shade500,
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _previewImage(String path, String label) {
-    return Column(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.file(
-            File(path),
-            width: 120,
-            height: 120,
-            fit: BoxFit.cover,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(label, style: const TextStyle(fontSize: 14)),
-      ],
     );
   }
 }

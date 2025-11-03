@@ -2,7 +2,7 @@ import 'package:ezride/Core/widgets/AppBarWidget/CustomAppBarWidget.dart';
 import 'package:ezride/Core/widgets/Cards/Card_Optap.dart';
 import 'package:ezride/Core/widgets/CustomBottonBar/CustomBottonBar.dart';
 import 'package:ezride/Core/widgets/inputs/home/search_field.dart';
-import 'package:ezride/Feature/Home/HOME/controller/Home_Controller.dart';
+import 'package:ezride/Feature/Home/HOME/Home_model/Home_Controller.dart';
 import 'package:ezride/Feature/Home/HOME/widgets/Home_Promo_widget.dart';
 import 'package:ezride/Core/widgets/Heads/section_header_HomeWidgets.dart';
 import 'package:ezride/Feature/Home/HOME/widgets/Home_CardCars_widget.dart';

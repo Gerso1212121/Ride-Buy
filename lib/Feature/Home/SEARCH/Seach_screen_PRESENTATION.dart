@@ -1,5 +1,5 @@
 import 'package:ezride/Core/widgets/Cards/Card_CarsDetails.dart';
-import 'package:ezride/Feature/Home/SEARCH/controller/Search_model.dart';
+import 'package:ezride/Feature/Home/SEARCH/Search_model/Search_model.dart';
 import 'package:ezride/Feature/Home/SEARCH/shared/Search_Header.dart';
 import 'package:go_router/go_router.dart';
 import '/flutter_flow/flutter_flow_drop_down.dart';

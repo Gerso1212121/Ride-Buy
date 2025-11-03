@@ -40,17 +40,55 @@ class ProfileUserRepositoryData implements ProfileUserRepositoryDomain {
     required String password,
   }) async {
     try {
-      // Evitar duplicados
+      // 🔒 Verifica si ya existe como usuario verificado
       if (await _userExists(email)) {
         throw Exception('El correo ya está registrado.');
       }
 
+      // 🔍 Verificar si ya está en "register_pending"
+      const sqlCheckPending = 'SELECT * FROM register_pending WHERE email = @e';
+      final existingPending =
+          await RenderDbClient.query(sqlCheckPending, parameters: {'e': email});
+
       final now = DateTime.now().toUtc();
-      final newId = const Uuid().v4();
       final otp = _generateOTP();
       final hashedPass = _hashPassword(password);
 
-      // Creamos el modelo temporal
+      // 🌀 Si ya existe en pending, actualiza OTP y reenvía
+      if (existingPending.isNotEmpty) {
+        const sqlUpdate = '''
+        UPDATE register_pending
+        SET otp_code = @otp_code,
+            otp_created_at = @otp_created_at,
+            otp_expires_at = @otp_expires_at,
+            passwd = @passwd,
+            updated_at = @updated_at
+        WHERE email = @email
+      ''';
+        await RenderDbClient.query(sqlUpdate, parameters: {
+          'otp_code': otp,
+          'otp_created_at': now,
+          'otp_expires_at': now.add(const Duration(minutes: 10)),
+          'passwd': hashedPass,
+          'updated_at': now,
+          'email': email,
+        });
+
+        await _sendOTPEmail(email, otp);
+        print('🔁 OTP actualizado y reenviado a $email');
+
+        final updatedModel = AuthRegisterPendingModel.fromMap({
+          ...existingPending.first,
+          'otp_code': otp,
+          'otp_created_at': now,
+          'otp_expires_at': now.add(const Duration(minutes: 10)),
+          'updated_at': now,
+        });
+        return updatedModel.toEntity();
+      }
+
+      // 🆕 Si no existe en pending, crear nuevo registro
+      final newId = const Uuid().v4();
       final pendingModel = AuthRegisterPendingModel(
         id: newId,
         email: email,
@@ -63,20 +101,17 @@ class ProfileUserRepositoryData implements ProfileUserRepositoryDomain {
         updatedAt: now,
       );
 
-      // Guardamos en la tabla register_pending
-      await RenderDbClient.runTransaction((ctx) async {
-        const sql = '''
-          INSERT INTO register_pending (
-            id, email, passwd, otp_code, otp_created_at, otp_expires_at, verified, created_at, updated_at
-          ) VALUES (
-            @id, @email, @passwd, @otp_code, @otp_created_at, @otp_expires_at, @verified, @created_at, @updated_at
-          )
-        ''';
-        await ctx.execute(Sql.named(sql), parameters: pendingModel.toMap());
-      });
+      const sqlInsert = '''
+      INSERT INTO register_pending (
+        id, email, passwd, otp_code, otp_created_at, otp_expires_at, verified, created_at, updated_at
+      ) VALUES (
+        @id, @email, @passwd, @otp_code, @otp_created_at, @otp_expires_at, @verified, @created_at, @updated_at
+      )
+    ''';
+      await RenderDbClient.query(sqlInsert, parameters: pendingModel.toMap());
 
-      // Enviar el OTP al correo
       await _sendOTPEmail(email, otp);
+      print('✅ OTP enviado por primera vez a $email');
 
       return pendingModel.toEntity();
     } catch (e) {
@@ -187,10 +222,20 @@ class ProfileUserRepositoryData implements ProfileUserRepositoryDomain {
       if (result.isEmpty) throw Exception('Usuario no encontrado.');
 
       final model = AuthProfilesUserModel.fromMap(result.first);
+
+      // 🔒 Validar contraseña
       if (model.passwd != _hashPassword(password)) {
         throw Exception('Contraseña incorrecta.');
       }
 
+      // ⚠️ Verificar estado de verificación
+      if (model.verificationStatus != VerificationStatus.verificado) {
+        // No lanzamos error, dejamos entrar pero lo mandamos a completar verificación
+        await _saveUserSession(model);
+        return model.toEntity();
+      }
+
+      // 🟢 Generar token y guardar sesión local
       final updated = model.copyWith(
         token: DateTime.now().millisecondsSinceEpoch.toString(),
       );
@@ -248,138 +293,131 @@ class ProfileUserRepositoryData implements ProfileUserRepositoryDomain {
   Future<bool> _userExists(String email) async {
     const sql = 'SELECT COUNT(*) AS count FROM profiles WHERE email = @e';
     final r1 = await RenderDbClient.query(sql, parameters: {'e': email});
-
-    const sql2 =
-        'SELECT COUNT(*) AS count FROM register_pending WHERE email = @e';
-    final r2 = await RenderDbClient.query(sql2, parameters: {'e': email});
-
-    return (r1.first['count'] ?? 0) > 0 || (r2.first['count'] ?? 0) > 0;
+    return (r1.first['count'] ?? 0) > 0;
   }
 
+//ENVIO DE CORREO
   Future<void> _sendOTPEmail(String email, String otp) async {
-    final smtpEmail = dotenv.env['SMTP_EMAIL'];
-    final smtpPassword = dotenv.env['SMTP_PASSWORD'];
-    if (smtpEmail == null || smtpPassword == null) {
-      throw Exception('SMTP no configurado');
+    final apiKey = dotenv.env['SENDGRID_API_KEY'];
+    final fromEmail =
+        dotenv.env['MAIL_FROM_ADDRESS'] ?? 'noreply@carpinteriachavarria.com';
+    final fromName = dotenv.env['MAIL_FROM_NAME'] ?? 'EZ RIDE';
+
+    if (apiKey == null) {
+      throw Exception('Falta la clave API de SendGrid');
     }
 
-    final smtpServer = gmail(smtpEmail, smtpPassword);
-    final message = Message()
-      ..from = Address(smtpEmail, 'EZRide')
-      ..recipients.add(email)
-      ..subject = 'RIDE&BUY OTP Verificacion'
-      ..html = '''
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Verificación de cuenta - EZRide</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background-color: #f5f7fa;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 520px;
-      margin: 40px auto;
-      background-color: #ffffff;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      overflow: hidden;
-    }
-    .header {
-      background-color: #007bff;
-      color: white;
-      text-align: center;
-      padding: 20px;
-    }
-    .header h1 {
-      margin: 0;
-      font-size: 24px;
-      letter-spacing: 1px;
-    }
-    .content {
-      padding: 30px;
-      color: #333;
-    }
-    .content h2 {
-      font-size: 20px;
-      margin-bottom: 10px;
-      color: #007bff;
-    }
-    .otp-box {
-      text-align: center;
-      background-color: #f0f4ff;
-      border: 1px dashed #007bff;
-      padding: 15px;
-      border-radius: 10px;
-      margin: 20px 0;
-    }
-    .otp-code {
-      font-size: 28px;
-      font-weight: bold;
-      letter-spacing: 4px;
-      color: #007bff;
-      user-select: all;
-    }
-    .copy-button {
-      display: inline-block;
-      margin-top: 10px;
-      padding: 10px 18px;
-      background-color: #007bff;
-      color: white;
-      border-radius: 6px;
-      text-decoration: none;
-      font-size: 14px;
-      transition: background-color 0.3s;
-    }
-    .copy-button:hover {
-      background-color: #0056b3;
-    }
-    .footer {
-      background-color: #f1f1f1;
-      text-align: center;
-      padding: 15px;
-      font-size: 12px;
-      color: #777;
-    }
-    .car-icon {
-      width: 40px;
-      margin-bottom: 8px;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <img class="car-icon" src="https://cdn-icons-png.flaticon.com/512/743/743922.png" alt="Car Icon">
-      <h1>EZRide Rent a Car</h1>
-    </div>
-
-    <div class="content">
-      <h2>Verifica tu cuenta</h2>
-      <p>Hola 👋,</p>
-      <p>Gracias por registrarte en <b>EZRide</b>. Para continuar con tu proceso de verificación y activar tu cuenta, usa el siguiente código:</p>
-
-      <div class="otp-box">
-        <div class="otp-code" id="otp">$otp</div>
-        <a href="#" class="copy-button" onclick="navigator.clipboard.writeText('$otp'); alert('Código copiado'); return false;">📋 Copiar código</a>
+    final htmlContent = '''
+  <!DOCTYPE html>
+  <html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <title>Verificación de cuenta - MAX EXPRESS</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background-color: #f5f7fa;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 520px;
+        margin: 40px auto;
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        overflow: hidden;
+      }
+      .header {
+        background-color: #007bff;
+        color: white;
+        text-align: center;
+        padding: 20px;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 24px;
+      }
+      .content {
+        padding: 30px;
+        color: #333;
+      }
+      .otp-box {
+        text-align: center;
+        background-color: #f0f4ff;
+        border: 1px dashed #007bff;
+        padding: 15px;
+        border-radius: 10px;
+        margin: 20px 0;
+      }
+      .otp-code {
+        font-size: 28px;
+        font-weight: bold;
+        color: #007bff;
+      }
+      .footer {
+        background-color: #f1f1f1;
+        text-align: center;
+        padding: 15px;
+        font-size: 12px;
+        color: #777;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>MAX EXPRESS Rent a Car</h1>
       </div>
-
-      <p>Este código expira en <b>10 minutos</b>. Si no solicitaste esta verificación, puedes ignorar este mensaje.</p>
+      <div class="content">
+        <h2>Tu código de verificación</h2>
+        <p>Hola 👋,</p>
+        <p>Usa este código para verificar tu cuenta:</p>
+        <div class="otp-box">
+          <div class="otp-code">$otp</div>
+        </div>
+        <p>Este código expira en <b>10 minutos</b>.</p>
+      </div>
+      <div class="footer">
+        © ${DateTime.now().year} MAX EXPRESS — Tu viaje comienza aquí 🚗
+      </div>
     </div>
+  </body>
+  </html>
+  ''';
 
-    <div class="footer">
-      © ${DateTime.now().year} EZRide Rent a Car — Tu viaje comienza aquí 🚗
-    </div>
-  </div>
-</body>
-</html>
-''';
+    final data = {
+      "personalizations": [
+        {
+          "to": [
+            {"email": email}
+          ],
+          "subject": "Verificación de cuenta - MAX EXPRESS"
+        }
+      ],
+      "from": {"email": fromEmail, "name": fromName},
+      "content": [
+        {"type": "text/html", "value": htmlContent}
+      ]
+    };
 
-    await send(message, smtpServer);
+    final response = await Dio().post(
+      'https://api.sendgrid.com/v3/mail/send',
+      data: data,
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer $apiKey',
+          'Content-Type': 'application/json',
+        },
+      ),
+    );
+
+    if (response.statusCode == 202) {
+      print('✅ Correo enviado correctamente a $email');
+    } else {
+      print(
+          '⚠️ Error al enviar correo: ${response.statusCode} - ${response.data}');
+    }
   }
 
   Future<void> _deletePending(String email) async {
@@ -387,39 +425,76 @@ class ProfileUserRepositoryData implements ProfileUserRepositoryDomain {
     await RenderDbClient.query(sql, parameters: {'email': email});
   }
 
-@override
-Future<void> updateUserProfile({
-  required String id,
-  required String displayName,
-  required String phone,
-  required String duiNumber,
-  required String dateOfBirth,
-}) async {
-  try {
-    const sql = '''
-      UPDATE profiles
-      SET
-        display_name = @display_name,
-        phone = @phone,
-        dui_number = @dui_number,
-        date_of_birth = @date_of_birth,
-        updated_at = now()
-      WHERE id = @id
+  @override
+  Future<void> updateUserProfile({
+    required String id,
+    required String displayName,
+    required String phone,
+    required String duiNumber,
+    required String dateOfBirth,
+    required String verificationStatus, // ✅ nuevo
+  }) async {
+    try {
+      const sql = '''
+    UPDATE profiles
+    SET
+      display_name = @display_name,
+      phone = @phone,
+      dui_number = @dui_number,
+      date_of_birth = @date_of_birth,
+      verification_status = @verification_status, -- ✅ nuevo
+      updated_at = now()
+    WHERE id = @id
     ''';
 
+      await RenderDbClient.query(sql, parameters: {
+        'id': id,
+        'display_name': displayName,
+        'phone': phone,
+        'dui_number': duiNumber,
+        'date_of_birth': dateOfBirth,
+        'verification_status': verificationStatus, // ✅ nuevo
+      });
+
+      print('✅ Perfil actualizado correctamente en la base de datos.');
+    } catch (e) {
+      print('❌ Error al actualizar el perfil: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updateFullProfile(Profile profile) async {
+    const sql = '''
+  UPDATE profiles
+  SET
+    role = @role,
+    display_name = @display_name,
+    phone = @phone,
+    verification_status = @verification_status,
+    email = @email,
+    passwd = @passwd,
+    dui_number = @dui_number,
+    license_number = @license_number,
+    date_of_birth = @date_of_birth,
+    email_verified = @email_verified,
+    updated_at = NOW()
+  WHERE id = @id
+  ''';
+
     await RenderDbClient.query(sql, parameters: {
-      'id': id,
-      'display_name': displayName,
-      'phone': phone,
-      'dui_number': duiNumber,
-      'date_of_birth': dateOfBirth,
+      'id': profile.id,
+      'role': profile.role.name,
+      'display_name': profile.displayName,
+      'phone': profile.phone,
+      'verification_status': profile.verificationStatus.name,
+      'email': profile.email,
+      'passwd': profile.passwd,
+      'dui_number': profile.duiNumber,
+      'license_number': profile.licenseNumber,
+      'date_of_birth': profile.dateOfBirth?.toIso8601String(),
+      'email_verified': profile.emailVerified,
     });
 
-    print('✅ Perfil actualizado correctamente en la base de datos.');
-  } catch (e) {
-    print('❌ Error al actualizar el perfil: $e');
-    rethrow;
+    print("✅ Perfil completo actualizado en DB");
   }
-}
-
 }

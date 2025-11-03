@@ -4,24 +4,26 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 Future<void> createTables() async {
   try {
     await dotenv.load(fileName: ".env");
-
-    // Inicializar conexión con Render
     await RenderDbClient.init();
 
-    // 🟢 Tabla de perfiles
+    print('⚙️ Creando tablas con restricciones únicas...');
+
+    // ===========================================================
+    // 👤 Tabla de perfiles (usuarios del sistema)
+    // ===========================================================
     const createProfilesSQL = '''
     CREATE TABLE IF NOT EXISTS public.profiles (
-      id uuid PRIMARY KEY,
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       role text NOT NULL DEFAULT 'cliente'
         CHECK (role IN ('cliente','empresario','empleado','soporte','admin')),
       display_name text,
-      phone text UNIQUE,
+      phone text UNIQUE, -- 🔒 único (no puede repetirse)
       verification_status text DEFAULT 'pendiente'
         CHECK (verification_status IN ('pendiente','en_revision','verificado','rechazado')),
-      email text NOT NULL UNIQUE,
+      email text NOT NULL UNIQUE, -- 🔒 único
       passwd varchar(255) NOT NULL,
-      dui_number text,
-      license_number text,
+      dui_number text UNIQUE, -- 🔒 único
+      license_number text UNIQUE, -- 🔒 puede ser único si lo deseas
       date_of_birth date,
       email_verified boolean DEFAULT false,
       created_at timestamptz NOT NULL DEFAULT now(),
@@ -31,11 +33,13 @@ Future<void> createTables() async {
     await RenderDbClient.query(createProfilesSQL);
     print('✅ Tabla "profiles" creada o existente.');
 
-    // 🕐 Tabla de registros pendientes (para OTP)
+    // ===========================================================
+    // 📩 Tabla temporal de registro pendiente (OTP)
+    // ===========================================================
     const createRegisterPendingSQL = '''
     CREATE TABLE IF NOT EXISTS public.register_pending (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      email text NOT NULL UNIQUE,
+      email text NOT NULL UNIQUE, -- 🔒 único (no duplicar registro pendiente)
       passwd varchar(255) NOT NULL,
       otp_code text NOT NULL,
       otp_created_at timestamptz NOT NULL DEFAULT now(),
@@ -48,38 +52,31 @@ Future<void> createTables() async {
     await RenderDbClient.query(createRegisterPendingSQL);
     print('✅ Tabla "register_pending" creada o existente.');
 
-    // 🔄 Asegurar que las columnas sean TIMESTAMPTZ con UTC correcto
-    const alterRegisterPendingSQL = '''
-    ALTER TABLE register_pending
-      ALTER COLUMN otp_created_at TYPE timestamptz USING otp_created_at AT TIME ZONE 'UTC',
-      ALTER COLUMN otp_expires_at TYPE timestamptz USING otp_expires_at AT TIME ZONE 'UTC',
-      ALTER COLUMN created_at TYPE timestamptz USING created_at AT TIME ZONE 'UTC',
-      ALTER COLUMN updated_at TYPE timestamptz USING updated_at AT TIME ZONE 'UTC';
-    ''';
-    await RenderDbClient.query(alterRegisterPendingSQL);
-    print('✅ Columnas de fecha de "register_pending" convertidas a UTC.');
-
+    // ===========================================================
     // 🏢 Tabla de empresas
+    // ===========================================================
     const createEmpresasSQL = '''
     CREATE TABLE IF NOT EXISTS public.empresas (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      owner_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-      nombre TEXT NOT NULL,
-      nit TEXT,
-      nrc TEXT,
-      direccion TEXT,
-      telefono TEXT,
-      estado_verificacion TEXT DEFAULT 'pendiente'
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+      nombre text NOT NULL,
+      nit text UNIQUE, -- 🔒 único
+      nrc text UNIQUE, -- 🔒 único
+      direccion text,
+      telefono text UNIQUE, -- 🔒 único
+      estado_verificacion text DEFAULT 'pendiente'
         CHECK (estado_verificacion IN ('pendiente','en_revision','verificado','rechazado')),
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      UNIQUE(owner_id, nombre)
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      UNIQUE(owner_id, nombre) -- 🔒 combinación única
     );
     ''';
     await RenderDbClient.query(createEmpresasSQL);
     print('✅ Tabla "empresas" creada o existente.');
 
+    // ===========================================================
     // 🚗 Tabla de vehículos
+    // ===========================================================
     const createVehiculosSQL = '''
     CREATE TABLE IF NOT EXISTS public.vehiculos (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -87,19 +84,22 @@ Future<void> createTables() async {
       marca text NOT NULL,
       modelo text NOT NULL,
       anio int,
-      placa text UNIQUE,
+      placa text UNIQUE, -- 🔒 único
       color text,
       tipo text,
       estado text DEFAULT 'disponible'
         CHECK (estado IN ('disponible','en_renta','mantenimiento','inactivo')),
       created_at timestamptz NOT NULL DEFAULT now(),
-      updated_at timestamptz NOT NULL DEFAULT now()
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      UNIQUE(empresa_id, placa) -- 🔒 evita que una empresa repita placa
     );
     ''';
     await RenderDbClient.query(createVehiculosSQL);
     print('✅ Tabla "vehiculos" creada o existente.');
 
+    // ===========================================================
     // 📄 Tabla de documentos
+    // ===========================================================
     const createDocumentosSQL = '''
     CREATE TABLE IF NOT EXISTS public.documentos (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -122,24 +122,30 @@ Future<void> createTables() async {
       ai_analysis_id uuid,
       created_by uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
       created_at timestamptz NOT NULL DEFAULT now(),
+
+      -- 🔒 Reglas de consistencia y unicidad
       CONSTRAINT documentos_scope_consistency CHECK (
         (scope = 'vehiculo' AND vehiculo_id IS NOT NULL AND empresa_id IS NULL AND perfil_id IS NULL AND tipo_vehiculo IS NOT NULL AND tipo_empresa IS NULL AND tipo_perfil IS NULL)
         OR
         (scope = 'empresa' AND empresa_id IS NOT NULL AND vehiculo_id IS NULL AND perfil_id IS NULL AND tipo_empresa IS NOT NULL AND tipo_vehiculo IS NULL AND tipo_perfil IS NULL)
         OR
         (scope = 'perfil' AND perfil_id IS NOT NULL AND empresa_id IS NULL AND vehiculo_id IS NULL AND tipo_perfil IS NOT NULL AND tipo_empresa IS NULL AND tipo_vehiculo IS NULL)
-      )
+      ),
+
+      -- 🔒 No permitir documentos duplicados del mismo tipo para el mismo recurso
+      UNIQUE(scope, empresa_id, vehiculo_id, perfil_id, tipo_vehiculo, tipo_empresa, tipo_perfil)
     );
     ''';
     await RenderDbClient.query(createDocumentosSQL);
     print('✅ Tabla "documentos" creada o existente.');
 
-    print('🎉 Todas las tablas fueron creadas y actualizadas correctamente (UTC listo).');
+    print('🎉 Todas las tablas fueron creadas con sus restricciones únicas correctamente.');
   } catch (e, stack) {
     print('❌ Error creando tablas: $e');
     print(stack);
   } finally {
     await RenderDbClient.close();
+    print('🔒 Conexión cerrada correctamente.');
   }
 }
 

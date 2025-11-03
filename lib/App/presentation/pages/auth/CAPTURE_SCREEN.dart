@@ -18,49 +18,87 @@ class CameraCapturePage extends StatefulWidget {
 }
 
 class _CameraCapturePageState extends State<CameraCapturePage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver, RouteAware {
   late CameraController _controller;
   late AnimationController _animationController;
   bool _isTaking = false;
+  bool _isCameraInitialized = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
-    // Inicializar cámara
     _controller = CameraController(
       widget.camera,
       ResolutionPreset.high,
       enableAudio: false,
     );
+
     _initializeCamera();
 
-    // 🔵 Animación de pulso en el borde
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
   }
 
+  // 📸 Inicializa cámara
   Future<void> _initializeCamera() async {
     try {
       await _controller.initialize();
-      if (mounted) setState(() {});
+      await _controller.setFlashMode(FlashMode.off);
+      if (mounted) setState(() => _isCameraInitialized = true);
     } catch (e) {
       debugPrint('❌ Error inicializando cámara: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error al iniciar la cámara')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al iniciar la cámara')),
+        );
+      }
     }
+  }
+
+  // ⚙️ Maneja ciclo de vida
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_controller.value.isInitialized) return;
+
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      _controller.dispose();
+      _isCameraInitialized = false;
+    } else if (state == AppLifecycleState.resumed) {
+      _reinitializeCamera();
+    }
+  }
+
+  // 🔁 Reintenta reiniciar cámara si vuelve al frente
+  void _reinitializeCamera() {
+    _controller = CameraController(
+      widget.camera,
+      ResolutionPreset.high,
+      enableAudio: false,
+    );
+    _initializeCamera();
+  }
+
+  // 🔙 Detecta cuando el usuario regresa (por Navigator.pop)
+  @override
+  void didPopNext() {
+    debugPrint('🔁 Página volvió al frente, reiniciando cámara...');
+    _reinitializeCamera();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     _animationController.dispose();
+    if (_controller.value.isInitialized) _controller.dispose();
     super.dispose();
   }
 
+  // 📷 Captura del DUI
   Future<void> _takePictureAndNavigate() async {
     if (!_controller.value.isInitialized || _isTaking) return;
     setState(() => _isTaking = true);
@@ -69,64 +107,63 @@ class _CameraCapturePageState extends State<CameraCapturePage>
       final XFile file = await _controller.takePicture();
       if (!mounted) return;
 
-      // 📷 Foto del DUI capturada
       final duifrontPath = file.path;
 
-      // 📸 Obtiene la cámara frontal
+      // 📸 Obtener cámara frontal
       final cameras = await availableCameras();
       final frontCamera = cameras.firstWhere(
         (cam) => cam.lensDirection == CameraLensDirection.front,
       );
 
-      // 🚀 Navega a la cámara de selfie pasando el DUI y perfilId
+      // 🚀 Ir a la cámara de selfie
       context.push(
         '/selfie-camera',
         extra: {
           'camera': frontCamera,
           'perfilId': widget.perfilId,
-          'duiImagePath': duifrontPath, // 👈 aquí se envía la imagen del DUI
+          'duiImagePath': duifrontPath,
         },
       );
     } catch (e) {
       debugPrint('❌ Error al tomar foto del DUI: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo tomar la foto del documento')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('No se pudo tomar la foto del documento')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isTaking = false);
     }
   }
 
+  // 🧱 UI igual que antes
   @override
   Widget build(BuildContext context) {
-    if (!_controller.value.isInitialized) {
+    if (!_isCameraInitialized) {
       return const Scaffold(
         backgroundColor: Colors.black,
-        body: Center(child: CircularProgressIndicator(color: Colors.white)),
+        body: Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        ),
       );
     }
 
-    const aspectRatio = 85 / 55; // proporción del DUI
+    const aspectRatio = 85 / 55;
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // 📸 Vista previa de la cámara
           CameraPreview(_controller),
-
-          // 🌫️ Fondo oscuro con recorte central (tipo escáner)
           _ScannerOverlay(aspectRatio: aspectRatio),
-
-          // 🔵 Marco azul animado
           Center(
             child: AspectRatio(
               aspectRatio: aspectRatio,
               child: AnimatedBuilder(
                 animation: _animationController,
-                builder: (context, child) {
-                  final thickness =
-                      3 + (_animationController.value * 2); // efecto de pulso
+                builder: (context, _) {
+                  final thickness = 3 + (_animationController.value * 2);
                   return Container(
                     decoration: BoxDecoration(
                       border: Border.all(
@@ -140,35 +177,20 @@ class _CameraCapturePageState extends State<CameraCapturePage>
               ),
             ),
           ),
-
-          // 🧾 Texto indicativo
           Positioned(
             bottom: 150,
             left: 0,
             right: 0,
-            child: Column(
-              children: const [
-                Text(
-                  'Coloca la parte frontal de tu DUI dentro del recuadro',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black54,
-                        offset: Offset(0, 1),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+            child: const Text(
+              'Coloca la parte frontal de tu DUI dentro del recuadro',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
-
-          // 🔘 Botón de captura
           Positioned(
             bottom: 40,
             left: 0,
@@ -185,13 +207,9 @@ class _CameraCapturePageState extends State<CameraCapturePage>
                   ),
                   child: Center(
                     child: _isTaking
-                        ? const SizedBox(
-                            height: 25,
-                            width: 25,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 3,
-                            ),
+                        ? const CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 3,
                           )
                         : const Icon(Icons.camera_alt,
                             color: Colors.white, size: 35),
@@ -200,8 +218,6 @@ class _CameraCapturePageState extends State<CameraCapturePage>
               ),
             ),
           ),
-
-          // ❌ Botón cerrar
           Positioned(
             top: 40,
             left: 20,
@@ -227,15 +243,15 @@ class _ScannerOverlay extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final screenWidth = constraints.maxWidth;
-        final boxWidth = screenWidth * 0.85; // 85% del ancho
+        final boxWidth = screenWidth * 0.85;
         final boxHeight = boxWidth / aspectRatio;
 
         return Stack(
           children: [
-            // Capa oscura semitransparente
+            // Capa oscura
             Container(color: Colors.black.withOpacity(0.6)),
 
-            // Recorte del área central (recuadro del documento)
+            // Recorte del área central
             Center(
               child: ClipPath(
                 clipper: _RectClipper(
@@ -252,6 +268,7 @@ class _ScannerOverlay extends StatelessWidget {
   }
 }
 
+/// ✂️ Clipper que recorta el rectángulo del DUI
 class _RectClipper extends CustomClipper<Path> {
   final double width;
   final double height;
@@ -266,8 +283,11 @@ class _RectClipper extends CustomClipper<Path> {
       width: width,
       height: height,
     );
-    path.addRect(hole);
-    return Path.combine(PathOperation.difference, path, Path()..addRect(hole));
+    return Path.combine(
+      PathOperation.difference,
+      path,
+      Path()..addRect(hole),
+    );
   }
 
   @override

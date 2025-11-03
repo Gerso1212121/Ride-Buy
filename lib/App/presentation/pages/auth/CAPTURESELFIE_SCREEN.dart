@@ -58,7 +58,9 @@ class _CameraSelfiePageState extends State<CameraSelfiePage>
 
   @override
   void dispose() {
-    _controller.dispose();
+    if (_controller.value.isInitialized) {
+      _controller.dispose();
+    }
     _animationController.dispose();
     super.dispose();
   }
@@ -69,6 +71,7 @@ class _CameraSelfiePageState extends State<CameraSelfiePage>
 
     try {
       final XFile file = await _controller.takePicture();
+      
       if (!mounted) return;
 
       // ✅ Navegar a la pantalla de subida con ambos paths

@@ -68,17 +68,19 @@ class AuthProfilesUserModel extends Profile {
       passwd: map['passwd'] as String?,
       duiNumber: map['dui_number'] as String?,
       licenseNumber: map['license_number'] as String?,
-      dateOfBirth: map['date_of_birth'] != null
-          ? DateTime.parse(map['date_of_birth'] as String)
-          : null,
+      dateOfBirth: map['date_of_birth'] is String
+          ? DateTime.parse(map['date_of_birth'])
+          : map['date_of_birth'] is DateTime
+              ? map['date_of_birth']
+              : null,
       email: map['email'] as String?,
       emailVerified: map['email_verified'] as bool? ?? false,
-      createdAt: map['created_at'] is DateTime
-          ? map['created_at']
-          : DateTime.parse(map['created_at'] as String),
-      updatedAt: map['updated_at'] is DateTime
-          ? map['updated_at']
-          : DateTime.parse(map['updated_at'] as String),
+      createdAt: map['created_at'] is String
+          ? DateTime.parse(map['created_at'])
+          : map['created_at'],
+      updatedAt: map['updated_at'] is String
+          ? DateTime.parse(map['updated_at'])
+          : map['updated_at'],
       token: map['token'] as String?,
     );
   }
