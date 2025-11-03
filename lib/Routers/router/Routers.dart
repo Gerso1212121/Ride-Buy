@@ -43,7 +43,18 @@ class AppRouter {
       GoRoute(
         path: '/auto-details',
         name: 'auto-details',
-        builder: (context, state) => const VehicleDetailScreen(vehicleId: '1'),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+
+          return VehicleDetailScreen(
+            vehicleId: extra['vehicleId'] ?? '',
+            vehicleTitle: extra['vehicleTitle'] ?? '',
+            vehicleImage: extra['vehicleImage'] ?? '',
+            dailyPrice: extra['dailyPrice'] ?? 0.0,
+            year: extra['year'] ?? '',
+            isRented: extra['isRented'] ?? 'disponible',
+          );
+        },
       ),
       GoRoute(
         path: '/chat',
