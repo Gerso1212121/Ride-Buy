@@ -231,7 +231,6 @@ class ProfileUserRepositoryData implements ProfileUserRepositoryDomain {
       // ⚠️ Verificar estado de verificación
       if (model.verificationStatus != VerificationStatus.verificado) {
         // No lanzamos error, dejamos entrar pero lo mandamos a completar verificación
-        await _saveUserSession(model);
         return model.toEntity();
       }
 
@@ -240,7 +239,6 @@ class ProfileUserRepositoryData implements ProfileUserRepositoryDomain {
         token: DateTime.now().millisecondsSinceEpoch.toString(),
       );
 
-      await _saveUserSession(updated);
       return updated.toEntity();
     } catch (e) {
       print('❌ Error en loginUser: $e');
@@ -432,19 +430,38 @@ class ProfileUserRepositoryData implements ProfileUserRepositoryDomain {
     required String phone,
     required String duiNumber,
     required String dateOfBirth,
-    required String verificationStatus, // ✅ nuevo
+    required String verificationStatus,
   }) async {
     try {
+      // 1. Verificar si el DUI ya está asociado a otro perfil
+      const checkDuiSql = '''
+      SELECT COUNT(*) AS count 
+      FROM profiles 
+      WHERE dui_number = @dui_number AND id != @id
+    ''';
+      final result = await RenderDbClient.query(checkDuiSql, parameters: {
+        'dui_number': duiNumber,
+        'id': id,
+      });
+
+      final duiExists = result.first['count'] > 0;
+
+      // Si el DUI ya está registrado en otro perfil, lanzar un error
+      if (duiExists) {
+        throw Exception('El DUI ya está registrado en otro perfil.');
+      }
+
+      // 2. Si el DUI no está duplicado, proceder con la actualización
       const sql = '''
-    UPDATE profiles
-    SET
-      display_name = @display_name,
-      phone = @phone,
-      dui_number = @dui_number,
-      date_of_birth = @date_of_birth,
-      verification_status = @verification_status, -- ✅ nuevo
-      updated_at = now()
-    WHERE id = @id
+      UPDATE profiles
+      SET
+        display_name = @display_name,
+        phone = @phone,
+        dui_number = @dui_number,
+        date_of_birth = @date_of_birth,
+        verification_status = @verification_status,
+        updated_at = now()
+      WHERE id = @id
     ''';
 
       await RenderDbClient.query(sql, parameters: {
@@ -453,7 +470,7 @@ class ProfileUserRepositoryData implements ProfileUserRepositoryDomain {
         'phone': phone,
         'dui_number': duiNumber,
         'date_of_birth': dateOfBirth,
-        'verification_status': verificationStatus, // ✅ nuevo
+        'verification_status': verificationStatus,
       });
 
       print('✅ Perfil actualizado correctamente en la base de datos.');

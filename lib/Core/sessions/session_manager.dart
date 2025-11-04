@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:ezride/Core/enums/enums.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ezride/App/DATA/models/Auth/AuthProfilesUser_Model.dart';
 import 'package:ezride/App/DOMAIN/Entities/Auth/PROFILE_user_entity.dart';
@@ -18,7 +19,10 @@ class SessionManager {
   static bool get hasSession => _currentProfile != null;
 
   /// Verificar si el usuario está verificado
-  static bool get isVerified => _currentProfile?.emailVerified ?? false;
+  /// ✅ Usuario 100% verificado solo si pasó identidad
+  static bool get isVerified {
+    return _currentProfile?.verificationStatus == VerificationStatus.verificado;
+  }
 
   /// Guardar perfil en sesión (memoria + SharedPreferences)
   static Future<void> setProfile(Profile profile) async {
@@ -27,13 +31,13 @@ class SessionManager {
       print('  ID: ${profile.id}');
       print('  Email: ${profile.email}');
       print('  Verificado: ${profile.emailVerified}');
-      
+
       _currentProfile = profile;
 
       final prefs = await SharedPreferences.getInstance();
-      
-      final userModel = profile is AuthProfilesUserModel 
-          ? profile 
+
+      final userModel = profile is AuthProfilesUserModel
+          ? profile
           : AuthProfilesUserModel.fromEntity(profile);
 
       final jsonString = jsonEncode(userModel.toMap());
@@ -41,7 +45,7 @@ class SessionManager {
 
       /// 🚀 Notificar listeners del cambio en el perfil
       profileNotifier.value = profile;
-      
+
       print('✅ Perfil guardado exitosamente');
     } catch (e, st) {
       print('❌ Error guardando perfil: $e');
@@ -74,7 +78,7 @@ class SessionManager {
 
       /// 🟦 Notificar al cargar sesión
       profileNotifier.value = userModel;
-      
+
       print('✅ Sesión cargada exitosamente');
       return _currentProfile;
     } catch (e, st) {
@@ -97,8 +101,8 @@ class SessionManager {
       print('🔄 Actualizando perfil...');
 
       final model = _currentProfile is AuthProfilesUserModel
-        ? _currentProfile as AuthProfilesUserModel
-        : AuthProfilesUserModel.fromEntity(_currentProfile!);
+          ? _currentProfile as AuthProfilesUserModel
+          : AuthProfilesUserModel.fromEntity(_currentProfile!);
 
       final updatedModel = model.copyWith(
         displayName: displayName,
@@ -127,18 +131,19 @@ class SessionManager {
 
       /// ✨ También limpiar notifier
       profileNotifier.value = null;
-      
+
       print('✅ Sesión limpiada exitosamente');
     } catch (e) {
       print('❌ Error limpiando sesión: $e');
     }
   }
 
-
 //de momento no se usa en ningun lado
   static Future<bool> isSessionValid() async {
     final profile = await loadSession();
-    if (profile == null || profile.id.isEmpty || (profile.email?.isEmpty ?? true)) {
+    if (profile == null ||
+        profile.id.isEmpty ||
+        (profile.email?.isEmpty ?? true)) {
       print('⚠️ Sesión inválida');
       await clearProfile();
       return false;

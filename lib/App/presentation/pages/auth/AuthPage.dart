@@ -1,6 +1,7 @@
 import 'package:camera/camera.dart';
 import 'package:dio/dio.dart';
 import 'package:ezride/App/presentation/pages/auth/AuthOtpPage.dart';
+import 'package:ezride/Core/sessions/session_manager.dart';
 import 'package:ezride/Feature/Home/HOME/home_screen_PRESENTATION.dart';
 import 'package:ezride/Routers/router/MainComplete.dart';
 import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
@@ -140,15 +141,20 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
 
       switch (status) {
         case 'verificado':
+          await SessionManager.setProfile(profile);
           context.go('/main');
           break;
 
         case 'pendiente':
         case 'rechazado':
+          // Guardar sesión temporal mientras completa verificación
+          await SessionManager.setProfile(profile);
+
           final cameras = await availableCameras();
           final backCamera = cameras.firstWhere(
             (cam) => cam.lensDirection == CameraLensDirection.back,
           );
+
           if (!mounted) return;
           context.go('/capture-document', extra: {
             'camera': backCamera,

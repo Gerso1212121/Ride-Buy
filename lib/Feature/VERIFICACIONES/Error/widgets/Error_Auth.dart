@@ -21,6 +21,11 @@ class PantallaErrorVerificacionWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
+    final Map<String, dynamic> extraArguments =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ??
+            {};
+    final reason = extraArguments['reason'] as String? ??
+        ''; // Cambiado para que extraiga 'reason' como String
 
     return Scaffold(
       backgroundColor: theme.secondaryBackground,
@@ -61,7 +66,7 @@ class PantallaErrorVerificacionWidget extends StatelessWidget {
 
               // 📄 Texto
               Text(
-                description,
+                reason.isNotEmpty ? reason : description,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.lato(
                   fontSize: 15,

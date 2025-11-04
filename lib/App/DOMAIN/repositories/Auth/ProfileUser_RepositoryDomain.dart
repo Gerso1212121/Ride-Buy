@@ -39,5 +39,4 @@ Future<void> updateUserProfile({
   required String dateOfBirth,
   required String verificationStatus,
 });
-
 }

@@ -1,6 +1,7 @@
 import 'package:ezride/App/DOMAIN/Entities/Auth/PROFILE_user_entity.dart';
 import 'package:ezride/App/DOMAIN/Entities/Auth/REGISTER_PENDING_user_entity.dart';
 import 'package:ezride/App/DOMAIN/repositories/Auth/ProfileUser_RepositoryDomain.dart';
+import 'package:ezride/Core/enums/enums.dart';
 import 'package:ezride/Core/sessions/session_manager.dart';
 
 class ProfileUserUseCaseGlobal {
@@ -11,33 +12,31 @@ class ProfileUserUseCaseGlobal {
   // ------------------------------
   // LOGIN
   // ------------------------------
-Future<Profile> login({
-  required String email,
-  required String password,
-}) async {
-  if (email.trim().isEmpty || password.trim().isEmpty) {
-    throw Exception('Email y contraseña no pueden estar vacíos');
+  Future<Profile> login({
+    required String email,
+    required String password,
+  }) async {
+    if (email.trim().isEmpty || password.trim().isEmpty) {
+      throw Exception('Email y contraseña no pueden estar vacíos');
+    }
+
+    try {
+      final profile = await repository.loginUser(
+        email: email.trim(),
+        password: password.trim(),
+      );
+
+      // ✅ SOLO guardar sesión si está VERIFICADO
+      if (profile.verificationStatus == VerificationStatus.verificado) {
+        await SessionManager.setProfile(profile);
+      }
+
+      return profile;
+    } catch (e) {
+      print('❌ Error iniciando sesión para $email: $e');
+      rethrow;
+    }
   }
-
-  try {
-    final profile = await repository.loginUser(
-      email: email.trim(),
-      password: password.trim(),
-    );
-
-    // ✅ Guardamos sesión local para usar datos del usuario
-    await SessionManager.setProfile(profile);
-
-    // ✅ Retornamos siempre el perfil
-    // La UI decidirá si el usuario ya está verificado o no
-    return profile;
-
-  } catch (e) {
-    print('❌ Error iniciando sesión para $email: $e');
-    rethrow;
-  }
-}
-
 
   // ------------------------------
   // REGISTER
@@ -93,7 +92,13 @@ Future<Profile> login({
   // ------------------------------
   Future<bool> logout() async {
     try {
-      return await repository.logoutUser();
+      final ok = await repository.logoutUser();
+
+      if (ok) {
+        await SessionManager.clearProfile(); // ✅ mata sesión local real
+      }
+
+      return ok;
     } catch (e) {
       print('❌ Error cerrando sesión: $e');
       return false;

@@ -9,11 +9,8 @@ class ProfileHeader extends StatelessWidget {
     required this.userName,
     required this.verificationStatus,
     this.width = double.infinity,
-    this.height = 300,
-    this.gradientColors = const [
-      Color(0xFF014ECF),
-      Color(0xFFF5F5F5)
-    ],
+    this.height = 340,
+    this.gradientColors = const [Color(0xFF014ECF), Color(0xFFF5F5F5)],
     this.gradientStops = const [0.1, 1],
     this.gradientBegin = const AlignmentDirectional(0, 1),
     this.gradientEnd = const AlignmentDirectional(0, -1),
@@ -56,7 +53,7 @@ class ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
-    
+
     return Container(
       width: width,
       height: height,
@@ -121,20 +118,21 @@ class ProfileHeader extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Nombre del usuario
             Text(
               userName,
               textAlign: TextAlign.center,
-              style: userNameStyle ?? theme.headlineMedium?.copyWith(
-                fontFamily: 'Outfit',
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-                fontSize: 24,
-                letterSpacing: 0.0,
-              ),
+              style: userNameStyle ??
+                  theme.headlineMedium?.copyWith(
+                    fontFamily: 'Outfit',
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    fontSize: 24,
+                    letterSpacing: 0.0,
+                  ),
             ),
-            
+
             // Badge de estado de verificación
             Padding(
               padding: EdgeInsetsDirectional.fromSTEB(12, 0, 12, 0),
@@ -147,13 +145,14 @@ class ProfileHeader extends StatelessWidget {
                   padding: EdgeInsets.all(8),
                   child: Text(
                     verificationStatus,
-                    style: statusTextStyle ?? theme.labelMedium?.copyWith(
-                      fontFamily: 'Figtree',
-                      fontWeight: FontWeight.w500,
-                      color: statusTextColor ?? theme.info,
-                      fontSize: 12,
-                      letterSpacing: 0.0,
-                    ),
+                    style: statusTextStyle ??
+                        theme.labelMedium?.copyWith(
+                          fontFamily: 'Figtree',
+                          fontWeight: FontWeight.w500,
+                          color: statusTextColor ?? theme.info,
+                          fontSize: 12,
+                          letterSpacing: 0.0,
+                        ),
                   ),
                 ),
               ),

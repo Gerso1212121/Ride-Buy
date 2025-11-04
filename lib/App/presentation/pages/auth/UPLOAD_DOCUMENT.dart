@@ -85,12 +85,15 @@ class _UploadDocumentPageState extends State<UploadDocumentPage> {
 
       // 🔁 Redirige al formulario con los datos del DUI prellenados
       await Future.delayed(const Duration(seconds: 1));
+// 🔁 Redirige al formulario con los datos del DUI prellenados
+      await Future.delayed(const Duration(seconds: 1));
       context.go(
         '/personal-data',
         extra: {
           'fullName': analisisData['fullName'],
           'duiNumber': analisisData['documentNumber'],
           'dateOfBirth': analisisData['dateOfBirth'],
+          'perfilId': widget.perfilId, // ✅ AGREGAR ESTA LÍNEA
         },
       );
     } catch (e, stack) {
