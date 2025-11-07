@@ -56,21 +56,25 @@ Future<void> createTables() async {
     // 🏢 Tabla de empresas
     // ===========================================================
     const createEmpresasSQL = '''
-    CREATE TABLE IF NOT EXISTS public.empresas (
-      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      owner_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-      nombre text NOT NULL,
-      nit text UNIQUE, -- 🔒 único
-      nrc text UNIQUE, -- 🔒 único
-      direccion text,
-      telefono text UNIQUE, -- 🔒 único
-      estado_verificacion text DEFAULT 'pendiente'
-        CHECK (estado_verificacion IN ('pendiente','en_revision','verificado','rechazado')),
-      created_at timestamptz NOT NULL DEFAULT now(),
-      updated_at timestamptz NOT NULL DEFAULT now(),
-      UNIQUE(owner_id, nombre) -- 🔒 combinación única
-    );
-    ''';
+CREATE TABLE IF NOT EXISTS public.empresas (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  nombre text NOT NULL,
+  nit text UNIQUE, -- 🔒 único
+  nrc text UNIQUE, -- 🔒 único
+  direccion text, -- La dirección sigue siendo útil, pero también debes almacenar las coordenadas
+  telefono text UNIQUE, -- 🔒 único
+  estado_verificacion text DEFAULT 'pendiente'
+    CHECK (estado_verificacion IN ('pendiente','en_revision','verificado','rechazado')),
+  email text UNIQUE, -- Correo de la empresa (agregado como único)
+  latitud float8,  -- Latitud de la empresa (coordenada geográfica)
+  longitud float8, -- Longitud de la empresa (coordenada geográfica)
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(owner_id, nombre) -- 🔒 combinación única
+);
+''';
+
     await RenderDbClient.query(createEmpresasSQL);
     print('✅ Tabla "empresas" creada o existente.');
 
@@ -139,7 +143,8 @@ Future<void> createTables() async {
     await RenderDbClient.query(createDocumentosSQL);
     print('✅ Tabla "documentos" creada o existente.');
 
-    print('🎉 Todas las tablas fueron creadas con sus restricciones únicas correctamente.');
+    print(
+        '🎉 Todas las tablas fueron creadas con sus restricciones únicas correctamente.');
   } catch (e, stack) {
     print('❌ Error creando tablas: $e');
     print(stack);

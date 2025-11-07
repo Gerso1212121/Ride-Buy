@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:camera/camera.dart';
 import 'package:dio/dio.dart';
 import 'package:ezride/App/DATA/repositories/Auth/ProfileUser_RepositoryData.dart';
@@ -17,14 +18,19 @@ import 'package:ezride/Feature/VERIFICACIONES/Coverage/widgets/Coverage_Complete
 import 'package:ezride/Feature/VERIFICACIONES/Error/widgets/Error_Auth.dart';
 import 'package:ezride/Routers/router/MainComplete.dart';
 import 'package:ezride/Core/sessions/session_manager.dart';
+import 'package:ezride/Services/render/render_db_client.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:ezride/Services/render/render_db_client.dart';
+import 'package:ezride/Core/sessions/session_manager.dart';
 import 'package:go_router/go_router.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
     debugLogDiagnostics: true,
     initialLocation: '/auth', // Ruta inicial
-    redirect: (context, state) {
+    redirect: (context, state) async {
       print('🔄 REDIRECT: ${state.uri}');
       final hasSession = SessionManager.hasSession;
       final isVerified = SessionManager.isVerified;
@@ -34,7 +40,6 @@ class AppRouter {
           '📊 Session: $hasSession, Verified: $isVerified, Location: $location');
 
       final publicRoutes = ['/auth', '/otp', '/empresa-registro'];
-
       final isPublic = publicRoutes.any((r) => location.startsWith(r));
 
       // Si no tiene sesión y no está en una ruta pública, redirige a /auth
@@ -47,6 +52,16 @@ class AppRouter {
       if (hasSession && !isVerified) {
         print('📄 Not verified, staying on current page');
         return null; // No redirigimos a /capture-document automáticamente
+      }
+
+      // Cargar la sesión y verificar que el usuario existe en la base de datos
+      if (hasSession) {
+        final user = await SessionManager.loadSession(); // Cargar la sesión
+        if (user == null) {
+          print(
+              '⚠️ Usuario no existe en la base de datos, redirigiendo a /auth');
+          return '/auth'; // Redirige a /auth si el usuario no está registrado
+        }
       }
 
       // Si está autenticado y verificado, redirige a /main
@@ -65,6 +80,13 @@ class AppRouter {
         builder: (context, _) {
           print('🏠 Building AuthPage');
           return const AuthPage();
+        },
+      ),
+      GoRoute(
+        path: '/empresa-registro',
+        builder: (context, _) {
+          print('🏢 Building FormularioEmpresaWidget');
+          return const FormularioEmpresaWidget();
         },
       ),
       GoRoute(
@@ -191,7 +213,7 @@ class AppRouter {
           print('🎉 Building VerificacionCompleta');
           return VerificacionCompletaWidget(
             onContinuePressed: () {
-              context.go('/main');
+              context.go('/auth');
             },
           );
         },
@@ -276,38 +298,4 @@ class AppRouter {
   );
 
   // Widget auxiliar para mostrar pantallas de error
-  static Widget _buildErrorScreen(String message) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Error de Navegación'),
-        backgroundColor: Colors.red,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
-            const SizedBox(height: 20),
-            Text(
-              'Error en el Router',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              message,
-              style: TextStyle(fontSize: 16),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Revisa la consola para más detalles de debug',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

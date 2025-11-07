@@ -44,11 +44,28 @@ class _CameraCapturePageState extends State<CameraCapturePage>
   }
 
   // 📸 Inicializa cámara
-  Future<void> _initializeCamera() async {
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_controller.value.isInitialized) return;
+
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      _controller.dispose(); // Liberar cámara al pausar
+      _isCameraInitialized = false;
+    } else if (state == AppLifecycleState.resumed) {
+      _reinitializeCamera(); // Re-inicializar cuando regresa al frente
+    }
+  }
+
+  void _initializeCamera() async {
     try {
-      await _controller.initialize();
-      await _controller.setFlashMode(FlashMode.off);
-      if (mounted) setState(() => _isCameraInitialized = true);
+      if (!_controller.value.isInitialized) {
+        // Solo inicializa si no está inicializada
+        await _controller.initialize();
+        await _controller.setFlashMode(FlashMode.off);
+        if (mounted) setState(() => _isCameraInitialized = true);
+      }
     } catch (e) {
       debugPrint('❌ Error inicializando cámara: $e');
       if (mounted) {
@@ -59,22 +76,11 @@ class _CameraCapturePageState extends State<CameraCapturePage>
     }
   }
 
-  // ⚙️ Maneja ciclo de vida
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!_controller.value.isInitialized) return;
-
-    if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused) {
-      _controller.dispose();
-      _isCameraInitialized = false;
-    } else if (state == AppLifecycleState.resumed) {
-      _reinitializeCamera();
-    }
-  }
-
-  // 🔁 Reintenta reiniciar cámara si vuelve al frente
   void _reinitializeCamera() {
+    if (_controller.value.isInitialized) {
+      _controller
+          .dispose(); // Asegúrate de liberar la cámara antes de volver a inicializarla
+    }
     _controller = CameraController(
       widget.camera,
       ResolutionPreset.high,
@@ -83,12 +89,15 @@ class _CameraCapturePageState extends State<CameraCapturePage>
     _initializeCamera();
   }
 
-  // 🔙 Detecta cuando el usuario regresa (por Navigator.pop)
-  @override
-  void didPopNext() {
-    debugPrint('🔁 Página volvió al frente, reiniciando cámara...');
-    _reinitializeCamera();
+@override
+void didPopNext() {
+  debugPrint('🔁 Página volvió al frente, reiniciando cámara...');
+  if (_controller.value.isInitialized) {
+    _controller.dispose(); // Liberar la cámara si ya estaba inicializada
   }
+  _reinitializeCamera(); // Reiniciar la cámara
+}
+
 
   @override
   void dispose() {
@@ -119,7 +128,8 @@ class _CameraCapturePageState extends State<CameraCapturePage>
       context.push(
         '/selfie-camera',
         extra: {
-          'camera': frontCamera,
+          'camera':
+              frontCamera, // Pasa la cámara frontal a la siguiente pantalla
           'perfilId': widget.perfilId,
           'duiImagePath': duifrontPath,
         },

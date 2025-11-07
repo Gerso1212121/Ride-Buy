@@ -4,10 +4,11 @@ import 'package:ezride/Feature/Home/Favoritos/Favoritos_screen_PRESENTATION.dart
 import 'package:ezride/Feature/Home/HISTORY_AUTOS/HistoryAutos_screen_PRESENTATION.dart';
 import 'package:ezride/Feature/Home/HOME/home_screen_PRESENTATION.dart';
 import 'package:ezride/Feature/Home/Notifications/Notifications_screen_PRESENTATION_Optimizar.dart';
-import 'package:ezride/Feature/Home/PROFILE_USER/Profile_User_PRESENTATION.dart';
+import 'package:ezride/Feature/Home/PROFILE_USER/Profile_User_PRESENTATION.dart'; // ProfileUser
+import 'package:ezride/Feature/Home/Profle_Empresa/ProfileEmpresa.dart'; // PerfilEmpresaWidget
 import 'package:ezride/Feature/Home/SEARCH/Seach_screen_PRESENTATION.dart';
 import 'package:flutter/material.dart';
-import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
+import 'package:ezride/Core/sessions/session_manager.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -25,23 +26,39 @@ class _MainShellState extends State<MainShell> {
 
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
+  // Las pantallas que se mostrarán en el cuerpo de la MainShell si el usuario tiene una empresa
+  final List<Widget> _screensWithEmpresa = [
     const HomeScreen(),
     const ReservasWidget(),
     const SearchAutos(),
     const FavCards(),
-     ProfileUser(),
+    const PerfilEmpresaWidget(), // Mostrar PerfilEmpresaWidget si tiene empresa
     const NotificacionesWidget(),
   ];
 
+  // Las pantallas que se mostrarán en el cuerpo si el usuario no tiene empresa
+  final List<Widget> _screensWithoutEmpresa = [
+    const HomeScreen(),
+    const ReservasWidget(),
+    const SearchAutos(),
+    const FavCards(),
+    const ProfileUser(),
+    const NotificacionesWidget(), // Si no tiene empresa, mostramos ProfileUser
+  ];
+
   final List<String> _titles = [
+    'Perfil Empresa', // Título para la pantalla de perfil de empresa
     'Ride & Buy',
     'Historial',
     'Buscar Autos',
     'Favoritos',
-    'Perfil',
     'Notificaciones',
   ];
+
+  // Si el usuario tiene una empresa, usamos las pantallas con empresa.
+  List<Widget> get _screens => SessionManager.currentEmpresa != null
+      ? _screensWithEmpresa // Muestra PerfilEmpresaWidget si tiene empresa
+      : _screensWithoutEmpresa; // Muestra ProfileUser si no tiene empresa
 
   void _onTabSelected(int index) {
     setState(() {
@@ -63,7 +80,7 @@ class _MainShellState extends State<MainShell> {
       ),
       body: IndexedStack(
         index: _currentIndex,
-        children: _screens, // Todas las pantallas ya están instanciadas
+        children: _screens, // Cambia las pantallas según si tiene empresa o no
       ),
       bottomNavigationBar: CustomBottomBar(
         currentIndex: _currentIndex,
@@ -71,7 +88,8 @@ class _MainShellState extends State<MainShell> {
           BottomBarItem(
             icon: Icons.home,
             label: 'Inicio',
-            onPressed: () => _onTabSelected(0),
+            onPressed: () => _onTabSelected(
+                0), // Ahora el índice es 1 ya que la primera pantalla es PerfilEmpresaWidget
           ),
           BottomBarItem(
             icon: Icons.history,
@@ -80,18 +98,19 @@ class _MainShellState extends State<MainShell> {
           ),
           BottomBarItem(
             icon: Icons.search,
-            label: 'Search',
+            label: 'Buscar Autos',
             onPressed: () => _onTabSelected(2),
           ),
           BottomBarItem(
             icon: Icons.favorite,
-            label: 'Search',
+            label: 'Favoritos',
             onPressed: () => _onTabSelected(3),
           ),
           BottomBarItem(
             icon: Icons.person,
             label: 'Perfil',
-            onPressed: () => _onTabSelected(4),
+            onPressed: () => _onTabSelected(
+                4), // Cambié el índice a 0 ya que ProfileUser es la primera pantalla si no tiene empresa
           ),
         ],
       ),

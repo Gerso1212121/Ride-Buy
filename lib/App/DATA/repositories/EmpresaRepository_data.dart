@@ -7,30 +7,34 @@ class EmpresarepositoryData implements EmpresaRepositoryDomain {
   EmpresarepositoryData();
 
   /// 🏢 Crear empresa
-  @override
-  Future<Empresas> crearEmpresa(Map<String, dynamic> empresaData) async {
-    const sql = '''
-      INSERT INTO public.empresas (
-        owner_id, nombre, nit, nrc, direccion, telefono, email, estado_verificacion, created_at, updated_at
-      )
-      VALUES (
-        @owner_id, @nombre, @nit, @nrc, @direccion, @telefono, @email, 'pendiente', now(), now()
-      )
-      RETURNING *;
-    ''';
+@override
+Future<Empresas> crearEmpresa(Map<String, dynamic> empresaData) async {
+  const sql = '''
+    INSERT INTO public.empresas (
+      owner_id, nombre, nit, nrc, direccion, telefono, email, latitud, longitud, estado_verificacion, created_at, updated_at
+    )
+    VALUES (
+      @owner_id, @nombre, @nit, @nrc, @direccion, @telefono, @email, @latitud, @longitud, 'pendiente', now(), now()
+    )
+    RETURNING *;
+  ''';
 
-    try {
-      final result = await RenderDbClient.query(sql, parameters: empresaData);
-      if (result.isEmpty) {
-        throw Exception('No se pudo crear la empresa');
-      }
-      return EmpresasModel.fromMap(result.first);
-    } catch (e, stack) {
-      print('❌ Error al crear empresa: $e');
-      print(stack);
-      throw Exception('Error creando empresa: $e');
+  try {
+    print('📥 Inserción de empresa con los datos: $empresaData'); // Imprime los datos que se insertan
+
+    final result = await RenderDbClient.query(sql, parameters: empresaData);
+    if (result.isEmpty) {
+      throw Exception('No se pudo crear la empresa');
     }
+
+    print('📊 Resultado de la inserción: $result'); // Muestra el resultado de la inserción
+    return EmpresasModel.fromMap(result.first);
+  } catch (e, stack) {
+    print('❌ Error al crear empresa: $e');
+    print(stack);
+    throw Exception('Error creando empresa: $e');
   }
+}
 
   /// 🔄 Cambiar rol
   @override

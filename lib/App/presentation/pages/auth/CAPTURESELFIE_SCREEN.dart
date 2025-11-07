@@ -43,18 +43,23 @@ class _CameraSelfiePageState extends State<CameraSelfiePage>
     )..repeat(reverse: true);
   }
 
-  Future<void> _initializeCamera() async {
-    try {
+void _initializeCamera() async {
+  try {
+    if (!_controller.value.isInitialized) { // Verifica si la cámara ya está inicializada
       await _controller.initialize();
-      await _controller.setFlashMode(FlashMode.off);
-      if (mounted) setState(() {});
-    } catch (e) {
-      debugPrint('❌ Error inicializando cámara: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error al iniciar la cámara')),
-      );
+      await _controller.setFlashMode(FlashMode.off); // Desactiva el flash si no lo necesitas
+      if (mounted) {
+        setState(() {});
+      }
     }
+  } catch (e) {
+    debugPrint('❌ Error inicializando cámara: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Error al iniciar la cámara')),
+    );
   }
+}
+
 
   @override
   void dispose() {

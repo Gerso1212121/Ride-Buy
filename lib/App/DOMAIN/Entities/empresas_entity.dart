@@ -8,7 +8,9 @@ class Empresas {
   final String ncr;
   final String direccion;
   final String telefono;
-  final String email; //ACORDATE DE AÑADIRLA AL SQL TERENGO
+  final String email;
+  final double latitud;
+  final double longitud;
   final VerificationStatus verificationStatus;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -22,7 +24,9 @@ class Empresas {
     required this.direccion,
     required this.telefono,
     required this.email,
-    this.verificationStatus = VerificationStatus.pendiente,
+    required this.latitud,
+    required this.longitud,
+    required this.verificationStatus,
     required this.createdAt,
     required this.updatedAt,
   });
