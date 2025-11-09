@@ -1,15 +1,15 @@
 import 'package:ezride/Feature/PAY_SUCCESS/Pay_Success_PRESENTATION.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'widgets/appbar_RentVehicleWidgets.dart';
-import 'widgets/bottombar_RentVehicleDetails.dart';
-import 'widgets/costSummaryCard_RentVehicleWidgets.dart';
-import 'widgets/daySelector_RentVehicleWidgets.dart';
-import 'widgets/detailCard_RentVehicleWidgets.dart';
-import 'widgets/infoCard_RentVehicleWidgets.dart';
-import 'widgets/paymentModal_RentVehicleWidgets.dart';
-import 'widgets/timePickerField_RentVehicleWidgets.dart';
-import 'widgets/timeSelection_RentVehicleWidgets.dart';
+import '../../../../Feature/RENTAR_VEHICLE/widgets/appbar_RentVehicleWidgets.dart';
+import '../../../../Feature/RENTAR_VEHICLE/widgets/bottombar_RentVehicleDetails.dart';
+import '../../../../Feature/RENTAR_VEHICLE/widgets/costSummaryCard_RentVehicleWidgets.dart';
+import '../../../../Feature/RENTAR_VEHICLE/widgets/daySelector_RentVehicleWidgets.dart';
+import '../../../../Feature/RENTAR_VEHICLE/widgets/detailCard_RentVehicleWidgets.dart';
+import '../../../../Feature/RENTAR_VEHICLE/widgets/infoCard_RentVehicleWidgets.dart';
+import '../../../../Feature/RENTAR_VEHICLE/widgets/paymentModal_RentVehicleWidgets.dart';
+import '../../../../Feature/RENTAR_VEHICLE/widgets/timePickerField_RentVehicleWidgets.dart';
+import '../../../../Feature/RENTAR_VEHICLE/widgets/timeSelection_RentVehicleWidgets.dart';
 
 class RentVehicleScreen extends StatefulWidget {
   const RentVehicleScreen({

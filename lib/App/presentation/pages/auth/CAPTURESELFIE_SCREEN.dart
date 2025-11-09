@@ -191,7 +191,7 @@ void _initializeCamera() async {
             left: 20,
             child: IconButton(
               icon: const Icon(Icons.close, color: Colors.white, size: 30),
-              onPressed: () => context.pop(),
+              onPressed: () => context.go("/auth"),
             ),
           ),
         ],

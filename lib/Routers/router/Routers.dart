@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:camera/camera.dart';
 import 'package:dio/dio.dart';
 import 'package:ezride/App/DATA/repositories/Auth/ProfileUser_RepositoryData.dart';
+import 'package:ezride/App/presentation/pages/Home/Profile_User_PRESENTATION.dart';
 import 'package:ezride/App/presentation/pages/auth/AuthComplete.dart';
 import 'package:ezride/App/presentation/pages/auth/AuthOtpPage.dart';
 import 'package:ezride/App/presentation/pages/auth/AuthPage.dart';
@@ -10,10 +11,10 @@ import 'package:ezride/App/presentation/pages/auth/UPLOAD_DOCUMENT.dart';
 import 'package:ezride/App/presentation/pages/auth/CAPTURE_SCREEN.dart';
 import 'package:ezride/App/presentation/pages/auth/UPLOAD_identity.dart';
 import 'package:ezride/Feature/Form_Empresa/FORMEMPRESAS.dart';
-import 'package:ezride/Feature/Home/Chat/Chat_screen_PRESENTATION.dart';
+import 'package:ezride/App/presentation/pages/Home/Chat_screen_PRESENTATION.dart';
 import 'package:ezride/Feature/PAY_SUCCESS/Pay_Success_PRESENTATION.dart';
-import 'package:ezride/Feature/RENTAR_VEHICLE/RentVehicle_screen_PRESENTATION.dart';
-import 'package:ezride/Feature/VEHICLE_DETAIL/VehicleDetail_screen_PRESENTATION.dart';
+import 'package:ezride/App/presentation/pages/Home/RentVehicle_screen_PRESENTATION.dart';
+import 'package:ezride/App/presentation/pages/Home/VehicleDetail_screen_PRESENTATION.dart';
 import 'package:ezride/Feature/VERIFICACIONES/Coverage/widgets/Coverage_Complete.dart';
 import 'package:ezride/Feature/VERIFICACIONES/Error/widgets/Error_Auth.dart';
 import 'package:ezride/Routers/router/MainComplete.dart';
@@ -292,6 +293,14 @@ class AppRouter {
             password: extra['password'],
             profileUserUseCaseGlobal: extra['profileUserUseCaseGlobal'],
           );
+        },
+      ),
+
+      GoRoute(
+        path: '/profile',
+        builder: (context, _) {
+          print('👤 Building ProfileUser');
+          return const ProfileUser();
         },
       ),
     ],

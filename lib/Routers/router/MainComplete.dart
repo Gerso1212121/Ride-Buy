@@ -1,12 +1,12 @@
 import 'package:ezride/Core/widgets/AppBarWidget/CustomAppBarWidget.dart';
 import 'package:ezride/Core/widgets/CustomBottonBar/CustomBottonBar.dart';
-import 'package:ezride/Feature/Home/Favoritos/Favoritos_screen_PRESENTATION.dart';
-import 'package:ezride/Feature/Home/HISTORY_AUTOS/HistoryAutos_screen_PRESENTATION.dart';
-import 'package:ezride/Feature/Home/HOME/home_screen_PRESENTATION.dart';
-import 'package:ezride/Feature/Home/Notifications/Notifications_screen_PRESENTATION_Optimizar.dart';
-import 'package:ezride/Feature/Home/PROFILE_USER/Profile_User_PRESENTATION.dart'; // ProfileUser
-import 'package:ezride/Feature/Home/Profle_Empresa/ProfileEmpresa.dart'; // PerfilEmpresaWidget
-import 'package:ezride/Feature/Home/SEARCH/Seach_screen_PRESENTATION.dart';
+import 'package:ezride/App/presentation/pages/Home/Favoritos_screen_PRESENTATION.dart';
+import 'package:ezride/App/presentation/pages/Home/HistoryAutos_screen_PRESENTATION.dart';
+import 'package:ezride/App/presentation/pages/Home/home_screen_PRESENTATION.dart';
+import 'package:ezride/App/presentation/pages/Home/Notifications_screen_PRESENTATION_Optimizar.dart';
+import 'package:ezride/App/presentation/pages/Home/Profile_User_PRESENTATION.dart'; // ProfileUser
+import 'package:ezride/App/presentation/pages/Home/ProfileEmpresa.dart'; // PerfilEmpresaWidget
+import 'package:ezride/App/presentation/pages/Home/Seach_screen_PRESENTATION.dart';
 import 'package:flutter/material.dart';
 import 'package:ezride/Core/sessions/session_manager.dart';
 
