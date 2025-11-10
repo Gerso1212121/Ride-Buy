@@ -79,4 +79,31 @@ Future<Empresas> crearEmpresa(Map<String, dynamic> empresaData) async {
       throw Exception('Error obteniendo empresas: $e');
     }
   }
+
+
+/// 🔄 Actualizar empresa
+@override
+Future<void> actualizarEmpresa(String empresaId, Map<String, dynamic> campos) async {
+  // Construir la parte SET de la consulta
+  final setClause = campos.keys.map((key) => '$key = @$key').join(', ');
+  final sql = '''
+    UPDATE public.empresas
+    SET $setClause, updated_at = now()
+    WHERE id = @empresaId;
+  ''';
+
+  // Parámetros: incluir todos los campos y el empresaId
+  final parameters = Map<String, dynamic>.from(campos);
+  parameters['empresaId'] = empresaId;
+
+  try {
+    await RenderDbClient.query(sql, parameters: parameters);
+  } catch (e, stack) {
+    print('❌ Error actualizando empresa: $e');
+    print(stack);
+    throw Exception('Error actualizando empresa: $e');
+  }
+}
+
+
 }

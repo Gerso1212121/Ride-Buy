@@ -1,12 +1,12 @@
 import 'package:ezride/Core/widgets/AppBarWidget/CustomAppBarWidget.dart';
 import 'package:ezride/Core/widgets/CustomBottonBar/CustomBottonBar.dart';
-import 'package:ezride/App/presentation/pages/Home/Favoritos_screen_PRESENTATION.dart';
-import 'package:ezride/App/presentation/pages/Home/HistoryAutos_screen_PRESENTATION.dart';
-import 'package:ezride/App/presentation/pages/Home/home_screen_PRESENTATION.dart';
-import 'package:ezride/App/presentation/pages/Home/Notifications_screen_PRESENTATION_Optimizar.dart';
-import 'package:ezride/App/presentation/pages/Home/Profile_User_PRESENTATION.dart'; // ProfileUser
+import 'package:ezride/App/presentation/pages/Home/Favoritos_Screen.dart';
+import 'package:ezride/App/presentation/pages/Home/HistoryAutos_Screen.dart';
+import 'package:ezride/App/presentation/pages/Home/Home_Screen.dart';
+import 'package:ezride/App/presentation/pages/Home/Notifications_Screen.dart';
+import 'package:ezride/App/presentation/pages/Home/ProfileUser_Screen.dart'; // ProfileUser
 import 'package:ezride/App/presentation/pages/Home/ProfileEmpresa.dart'; // PerfilEmpresaWidget
-import 'package:ezride/App/presentation/pages/Home/Seach_screen_PRESENTATION.dart';
+import 'package:ezride/App/presentation/pages/Home/Seach_Screen.dart';
 import 'package:flutter/material.dart';
 import 'package:ezride/Core/sessions/session_manager.dart';
 
@@ -46,14 +46,26 @@ class _MainShellState extends State<MainShell> {
     const NotificacionesWidget(), // Si no tiene empresa, mostramos ProfileUser
   ];
 
-  final List<String> _titles = [
-    'Perfil Empresa', // Título para la pantalla de perfil de empresa
+  final List<String> _titlesWithEmpresa = [
     'Ride & Buy',
     'Historial',
     'Buscar Autos',
     'Favoritos',
     'Notificaciones',
+    'Perfil Empresa', // Título para la pantalla de perfil de empresa
   ];
+
+  final List<String> _titlesWithoutEmpresa = [
+    'Ride & Buy',
+    'Historial',
+    'Buscar Autos',
+    'Favoritos',
+    'Notificaciones',
+    'Perfil Usuario', // Título para la pantalla de perfil de empresa
+  ];
+  List<String> get _titles => SessionManager.currentEmpresa != null
+      ? _titlesWithEmpresa
+      : _titlesWithoutEmpresa;
 
   // Si el usuario tiene una empresa, usamos las pantallas con empresa.
   List<Widget> get _screens => SessionManager.currentEmpresa != null
@@ -78,10 +90,7 @@ class _MainShellState extends State<MainShell> {
           print('Menu pressed');
         },
       ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens, // Cambia las pantallas según si tiene empresa o no
-      ),
+      body: _screens[_currentIndex],
       bottomNavigationBar: CustomBottomBar(
         currentIndex: _currentIndex,
         items: [

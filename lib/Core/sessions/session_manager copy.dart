@@ -234,22 +234,4 @@ class SessionManager {
 
   static String? get currentUserId => _currentProfile?.id;
   static String? get currentUserEmail => _currentProfile?.email;
-
-    // ===========================================================
-  // ✅ ACTUALIZAR EMPRESA ACTUAL (MÉTODO NUEVO)
-  // ===========================================================
-  static Future<void> updateCurrentEmpresa(EmpresasModel empresa) async {
-    try {
-      _currentEmpresa = empresa;
-      empresaNotifier.value = empresa;
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_empresaKey, jsonEncode(empresa.toMap()));
-
-      print('✅ Empresa actualizada en sesión: ${empresa.nombre}');
-    } catch (e) {
-      print('❌ Error actualizando empresa en sesión: $e');
-      throw Exception('Error actualizando empresa: $e');
-    }
-  }
 }

@@ -1,184 +1,177 @@
-import 'package:ezride/App/DATA/repositories/EmpresaRepository_data.dart';
 import 'package:flutter/material.dart';
-import 'package:ezride/Services/render/render_db_client.dart';
-import 'package:ezride/App/DOMAIN/usecases/RegistrarEmpresa_UseCase.dart';
-import 'package:ezride/Core/sessions/session_manager.dart';
-import 'package:ezride/Feature/Form_Empresa/FORM_MODELO.dart';
-import 'package:ezride/Feature/AUTH/widget/Auth_CustomButton_widget.dart';
-import 'package:ezride/Routers/router/MainComplete.dart';
 import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
 import 'package:ezride/flutter_flow/flutter_flow_util.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:geolocator/geolocator.dart'; // Agregar import para Geolocator
-import 'package:geocoding/geocoding.dart'; // Agregar import para Geocoding
+import 'package:geolocator/geolocator.dart';
 
 class FormularioEmpresaWidget extends StatefulWidget {
   const FormularioEmpresaWidget({super.key});
 
   @override
-  State<FormularioEmpresaWidget> createState() =>
-      _FormularioEmpresaWidgetState();
+  State<FormularioEmpresaWidget> createState() => _FormularioEmpresaWidgetState();
 }
 
 class _FormularioEmpresaWidgetState extends State<FormularioEmpresaWidget> {
-  late FormularioEmpresaModel _model;
-
-  final scaffoldKey = GlobalKey<ScaffoldState>();
+  final _formKey = GlobalKey<FormState>();
   final ScrollController _scrollController = ScrollController();
 
+  // Controladores
+  final TextEditingController _nombreController = TextEditingController();
+  final TextEditingController _nitController = TextEditingController();
   final TextEditingController _nrcController = TextEditingController();
-  final FocusNode _nrcFocusNode = FocusNode();
+  final TextEditingController _direccionController = TextEditingController();
+  final TextEditingController _telefonoController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
 
-  // Variables para latitud y longitud
-  double? latitude;
-  double? longitude;
+  // Focus nodes
+  final FocusNode _nombreFocus = FocusNode();
+  final FocusNode _nitFocus = FocusNode();
+  final FocusNode _nrcFocus = FocusNode();
+  final FocusNode _direccionFocus = FocusNode();
+  final FocusNode _telefonoFocus = FocusNode();
+  final FocusNode _emailFocus = FocusNode();
+
+  // Variables para ubicación
+  double? _latitud;
+  double? _longitud;
+  bool _ubicacionObtenida = false;
+  bool _obteniendoUbicacion = false;
 
   @override
   void initState() {
     super.initState();
-    _model = createModel(context, () => FormularioEmpresaModel());
-    _model.textController1 ??= TextEditingController();
-    _model.textController2 ??= TextEditingController();
-    _model.textController3 ??= TextEditingController();
-    _model.textController5 ??= TextEditingController();
-    _model.textController6 ??= TextEditingController();
-
-    _model.textFieldFocusNode1 ??= FocusNode();
-    _model.textFieldFocusNode2 ??= FocusNode();
-    _model.textFieldFocusNode3 ??= FocusNode();
-    _model.textFieldFocusNode5 ??= FocusNode();
-    _model.textFieldFocusNode6 ??= FocusNode();
-
-    // 👇 Llamar para obtener ubicación interna automáticamente
-    _obtenerUbicacionActual();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _solicitarUbicacion();
+    });
   }
 
   @override
   void dispose() {
-    _model.dispose();
+    _nombreController.dispose();
+    _nitController.dispose();
     _nrcController.dispose();
-    _nrcFocusNode.dispose();
+    _direccionController.dispose();
+    _telefonoController.dispose();
+    _emailController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  // Función para obtener coordenadas (latitud y longitud) de la dirección ingresada por el usuario
-  Future<void> _obtenerUbicacionActual() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    // Verifica si el GPS está habilitado
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      _alert(
-          "Ubicación desactivada", "Por favor, activa el GPS para continuar.");
-      return;
-    }
-
-    // Verifica permisos
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        _alert("Permiso denegado",
-            "No se puede registrar sin habilitar la ubicación.");
-        return;
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      _alert("Permiso permanente denegado",
-          "Activa los permisos de ubicación manualmente desde los ajustes.");
-      return;
-    }
-
-    // Obtiene ubicación actual
-    final position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
-
-    setState(() {
-      latitude = position.latitude;
-      longitude = position.longitude;
-    });
-
-    print("📍 Ubicación tomada: Lat=$latitude, Lng=$longitude");
+  Future<void> _solicitarUbicacion() async {
+    _mostrarModalUbicacion();
   }
 
-void _registrarEmpresa() async {
-  final profile = await SessionManager.loadSession();
-  if (profile == null) {
-    _alert("Error", "No se encontró la sesión del usuario.");
-    return;
+  void _mostrarModalUbicacion() {
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("📍 Ubicación Requerida"),
+          content: const Text(
+              "Para registrar tu empresa necesitamos acceder a tu ubicación actual para mostrar tu negocio en el mapa."),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _obtenerUbicacion();
+              },
+              child: const Text("Activar Ubicación"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _cerrarPantalla();
+              },
+              child: const Text("Cancelar"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
-  // Verificar si el usuario ya tiene una empresa registrada
-  if (SessionManager.currentEmpresa != null) {
-    _alert("Error", "Ya tienes una empresa registrada.");
-    return;
-  }
-
-  try {
-    // 🧩 Crear repositorio y caso de uso
-    final repo = EmpresarepositoryData();
-    final useCase = RegistrarEmpresaUseCase(repo);
-
-    // 🚀 Ejecutar flujo de registro de la nueva empresa
-    final empresa = await useCase.execute(
-      ownerId: profile.id,
-      nombre: _model.textController1!.text.trim(),
-      nit: _model.textController2!.text.trim(),
-      nrc: _nrcController.text.trim(),
-      direccion: _model.textController3!.text.trim(),
-      telefono: _model.textController5!.text.trim(),
-      email: _model.textController6!.text.trim(),
-      latitud: latitude!,
-      longitud: longitude!,
-    );
-
-    // Actualizar el perfil con la empresa asociada
-    await SessionManager.updateProfile(
-      displayName: profile.displayName,
-      phone: profile.phone,
-      emailVerified: profile.emailVerified,
-    );
-
-    // Ahora también asignamos la empresa recién registrada al SessionManager
-    SessionManager.currentEmpresa = empresa;
-
-    // ✅ Mostrar alerta y redirigir
+  void _cerrarPantalla() {
     if (mounted) {
-      _alert("Éxito", "Empresa registrada: ${empresa.nombre}", onOk: () {
-        // Redirige a la ruta principal
-        context.go('/main');
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> _obtenerUbicacion() async {
+    if (mounted) {
+      setState(() {
+        _obteniendoUbicacion = true;
       });
     }
-  } catch (e) {
-    if (mounted) {
-      _alert("Error", "No se pudo registrar la empresa.\n$e");
+
+    try {
+      bool serviceEnabled;
+      LocationPermission permission;
+
+      // Verificar si el servicio de ubicación está activado
+      serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _mostrarErrorUbicacion(
+            "GPS Desactivado", "Por favor, activa el GPS para continuar.");
+        return;
+      }
+
+      // Verificar permisos
+      permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          _mostrarErrorUbicacion("Permiso Denegado",
+              "No se puede registrar la empresa sin permisos de ubicación.");
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        _mostrarErrorUbicacion("Permiso Bloqueado",
+            "Activa los permisos de ubicación manualmente desde Ajustes > EzRide > Ubicación.");
+        return;
+      }
+
+      // Obtener ubicación actual
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.best,
+        timeLimit: const Duration(seconds: 15),
+      );
+
+      if (mounted) {
+        setState(() {
+          _latitud = position.latitude;
+          _longitud = position.longitude;
+          _ubicacionObtenida = true;
+          _obteniendoUbicacion = false;
+        });
+      }
+
+      print("📍 Ubicación obtenida: Lat=$_latitud, Lng=$_longitud");
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _obteniendoUbicacion = false;
+        });
+      }
+      _mostrarErrorUbicacion(
+          "Error de Ubicación", "No se pudo obtener la ubicación: $e");
     }
   }
-}
 
-
-
-
-  void _alert(String title, String msg, {VoidCallback? onOk}) {
+  void _mostrarErrorUbicacion(String titulo, String mensaje) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(title),
-        content: Text(msg),
+        title: Text(titulo),
+        content: Text(mensaje),
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Cierra el diálogo
-              if (onOk != null) {
-                if (mounted) {
-                  onOk();
-                }
-              }
+              Navigator.pop(context);
+              _cerrarPantalla();
             },
             child: const Text("OK"),
           ),
@@ -187,9 +180,68 @@ void _registrarEmpresa() async {
     );
   }
 
-  InputDecoration _inputStyle(String label, IconData icon) {
+  void _continuarAImagenes() {
+    if (!_ubicacionObtenida) {
+      _mostrarErrorUbicacion(
+          "Ubicación Requerida", "Es necesario obtener la ubicación para continuar.");
+      return;
+    }
+
+    if (!_formKey.currentState!.validate()) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+      return;
+    }
+
+    // Validar formato de teléfono
+    if (!_validarTelefono(_telefonoController.text)) {
+      _mostrarError("Teléfono Inválido", "Ingresa un número de teléfono válido (8 dígitos)");
+      return;
+    }
+
+    // Navegar a la siguiente pantalla con los datos
+    final datosEmpresa = {
+      'nombre': _nombreController.text.trim(),
+      'nit': _nitController.text.trim(),
+      'nrc': _nrcController.text.trim(),
+      'direccion': _direccionController.text.trim(),
+      'telefono': _telefonoController.text.trim(),
+      'email': _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
+      'latitud': _latitud,
+      'longitud': _longitud,
+    };
+
+    // Navegar a la pantalla de imágenes
+    context.push('/empresa-imagenes', extra: datosEmpresa);
+  }
+
+  bool _validarTelefono(String telefono) {
+    final telefonoRegex = RegExp(r'^[0-9]{8}$');
+    return telefonoRegex.hasMatch(telefono);
+  }
+
+  void _mostrarError(String titulo, String mensaje) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(titulo),
+        content: Text(mensaje),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  InputDecoration _inputStyle(String label, IconData icon, {bool opcional = false}) {
     return InputDecoration(
-      labelText: label,
+      labelText: opcional ? '$label (opcional)' : label,
       labelStyle: FlutterFlowTheme.of(context).labelMedium.override(
             font: GoogleFonts.lato(),
             letterSpacing: 0.0,
@@ -209,10 +261,50 @@ void _registrarEmpresa() async {
         ),
         borderRadius: BorderRadius.circular(40.0),
       ),
+      errorBorder: OutlineInputBorder(
+        borderSide: const BorderSide(
+          color: Colors.red,
+          width: 2.0,
+        ),
+        borderRadius: BorderRadius.circular(40.0),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderSide: const BorderSide(
+          color: Colors.red,
+          width: 2.0,
+        ),
+        borderRadius: BorderRadius.circular(40.0),
+      ),
       filled: true,
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.all(20.0),
     );
+  }
+
+  String? _validarRequerido(String? value, String campo) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Por favor ingresa $campo';
+    }
+    return null;
+  }
+
+  String? _validarEmail(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(value)) {
+      return 'Ingresa un email válido';
+    }
+    return null;
+  }
+
+  String? _validarTelefonoField(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Por favor ingresa el teléfono';
+    }
+    if (!_validarTelefono(value)) {
+      return 'Ingresa un teléfono válido (8 dígitos)';
+    }
+    return null;
   }
 
   @override
@@ -227,10 +319,10 @@ void _registrarEmpresa() async {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: _cerrarPantalla,
         ),
         title: Text(
-          "Registrar Empresa",
+          "Datos de la Empresa",
           style: GoogleFonts.lato(
             fontWeight: FontWeight.bold,
             color: Colors.black,
@@ -238,95 +330,217 @@ void _registrarEmpresa() async {
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(14),
-        child: SingleChildScrollView(
-          controller: _scrollController,
-          physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Subtitle
+              // Header
               Text(
-                "Ingresa los datos de tu empresa para continuar",
+                "Ingresa los datos básicos de tu empresa",
                 style: theme.bodyMedium.override(
                   font: GoogleFonts.lato(),
                   color: theme.secondaryText,
                 ),
               ),
-
               const SizedBox(height: 20),
 
-              // Inputs
-              TextFormField(
-                controller: _model.textController1,
-                focusNode: _model.textFieldFocusNode1,
-                decoration: _inputStyle("Nombre de la Empresa", Icons.business),
+              // Form Fields
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        controller: _nombreController,
+                        focusNode: _nombreFocus,
+                        decoration: _inputStyle("Nombre de la Empresa", Icons.business),
+                        validator: (value) => _validarRequerido(value, 'el nombre'),
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 16),
+
+                      TextFormField(
+                        controller: _nitController,
+                        focusNode: _nitFocus,
+                        decoration: _inputStyle("NIT", Icons.assignment),
+                        validator: (value) => _validarRequerido(value, 'el NIT'),
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 16),
+
+                      TextFormField(
+                        controller: _nrcController,
+                        focusNode: _nrcFocus,
+                        decoration: _inputStyle("NRC", Icons.badge),
+                        validator: (value) => _validarRequerido(value, 'el NRC'),
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 16),
+
+                      TextFormField(
+                        controller: _direccionController,
+                        focusNode: _direccionFocus,
+                        decoration: _inputStyle("Dirección", Icons.location_on),
+                        validator: (value) => _validarRequerido(value, 'la dirección'),
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 16),
+
+                      TextFormField(
+                        controller: _telefonoController,
+                        focusNode: _telefonoFocus,
+                        keyboardType: TextInputType.phone,
+                        decoration: _inputStyle("Teléfono", Icons.phone),
+                        validator: _validarTelefonoField,
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 16),
+
+                      TextFormField(
+                        controller: _emailController,
+                        focusNode: _emailFocus,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: _inputStyle("Email", Icons.email, opcional: true),
+                        validator: _validarEmail,
+                        textInputAction: TextInputAction.done,
+                      ),
+
+                      // Indicador de ubicación
+                      const SizedBox(height: 24),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: _ubicacionObtenida 
+                              ? Colors.green[50] 
+                              : _obteniendoUbicacion
+                                  ? Colors.blue[50]
+                                  : Colors.orange[50],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _ubicacionObtenida 
+                                ? Colors.green 
+                                : _obteniendoUbicacion
+                                    ? Colors.blue
+                                    : Colors.orange,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            _obteniendoUbicacion
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : Icon(
+                                    _ubicacionObtenida 
+                                        ? Icons.check_circle 
+                                        : Icons.location_on,
+                                    color: _ubicacionObtenida 
+                                        ? Colors.green 
+                                        : Colors.orange,
+                                  ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _obteniendoUbicacion
+                                        ? "Obteniendo ubicación..."
+                                        : _ubicacionObtenida 
+                                            ? "Ubicación obtenida" 
+                                            : "Ubicación requerida",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: _ubicacionObtenida 
+                                          ? Colors.green 
+                                          : _obteniendoUbicacion
+                                              ? Colors.blue
+                                              : Colors.orange,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _obteniendoUbicacion
+                                        ? "Estamos obteniendo tu ubicación actual..."
+                                        : _ubicacionObtenida 
+                                            ? "Lat: ${_latitud?.toStringAsFixed(4)}, Lng: ${_longitud?.toStringAsFixed(4)}" 
+                                            : "Necesitamos tu ubicación para registrar la empresa",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: _ubicacionObtenida 
+                                          ? Colors.green[700] 
+                                          : _obteniendoUbicacion
+                                              ? Colors.blue[700]
+                                              : Colors.orange[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (!_ubicacionObtenida && !_obteniendoUbicacion)
+                              TextButton(
+                                onPressed: _obtenerUbicacion,
+                                child: const Text("Reintentar"),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(height: 16),
-
-              TextFormField(
-                controller: _model.textController2,
-                focusNode: _model.textFieldFocusNode2,
-                decoration: _inputStyle("NIT", Icons.assignment),
-              ),
-              const SizedBox(height: 16),
-
-              TextFormField(
-                controller: _nrcController,
-                focusNode: _nrcFocusNode,
-                decoration: _inputStyle("NRC", Icons.badge),
-              ),
-              const SizedBox(height: 16),
-
-              TextFormField(
-                controller: _model.textController3,
-                focusNode: _model.textFieldFocusNode3,
-                decoration: _inputStyle("Dirección", Icons.location_on),
-              ),
-
-              const SizedBox(height: 16),
-
-              TextFormField(
-                controller: _model.textController5,
-                focusNode: _model.textFieldFocusNode5,
-                keyboardType: TextInputType.phone,
-                decoration: _inputStyle("Teléfono", Icons.phone),
-              ),
-              const SizedBox(height: 16),
-
-              TextFormField(
-                controller: _model.textController6,
-                focusNode: _model.textFieldFocusNode6,
-                keyboardType: TextInputType.emailAddress,
-                decoration: _inputStyle("Email (opcional)", Icons.email),
-              ),
-
-              const SizedBox(height: 35),
 
               // Buttons
               SizedBox(
                 width: double.infinity,
                 height: 56,
-                child: CustomButton(
-                  text: "Guardar",
-                  onPressed: _registrarEmpresa,
+                child: ElevatedButton(
+                  onPressed: _ubicacionObtenida ? _continuarAImagenes : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(40.0),
+                    ),
+                  ),
+                  child: Text(
+                    "Continuar a Imágenes",
+                    style: GoogleFonts.lato(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
               SizedBox(
                 width: double.infinity,
                 height: 56,
-                child: CustomButton(
-                  text: "Cancelar",
-                  backgroundColor: Colors.white,
-                  textColor: theme.primaryText,
-                  elevation: 0,
-                  onPressed: () => Navigator.pop(context),
+                child: OutlinedButton(
+                  onPressed: _cerrarPantalla,
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(40.0),
+                    ),
+                    side: BorderSide(color: theme.primary),
+                  ),
+                  child: Text(
+                    "Cancelar Registro",
+                    style: GoogleFonts.lato(
+                      color: theme.primaryText,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
-
-              const SizedBox(height: 80),
+              const SizedBox(height: 20),
             ],
           ),
         ),

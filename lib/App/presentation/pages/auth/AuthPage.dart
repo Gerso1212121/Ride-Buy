@@ -2,7 +2,7 @@ import 'package:camera/camera.dart';
 import 'package:dio/dio.dart';
 import 'package:ezride/App/presentation/pages/auth/AuthOtpPage.dart';
 import 'package:ezride/Core/sessions/session_manager.dart';
-import 'package:ezride/App/presentation/pages/Home/home_screen_PRESENTATION.dart';
+import 'package:ezride/App/presentation/pages/Home/Home_Screen.dart';
 import 'package:ezride/Routers/router/MainComplete.dart';
 import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
 import 'package:ezride/Feature/AUTH/Auth_Header.dart';
@@ -141,23 +141,30 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
 
       switch (status) {
         case 'verificado':
+          // ✅ 1. Guardar perfil
           await SessionManager.setProfile(profile);
+
+          // ✅ 2. Buscar empresa en BD
+          final empresa = await SessionManager.getEmpresaFromDB(profile.id);
+
+          // ✅ 3. Guardar empresa si existe
+          await SessionManager.setProfile(profile, empresa: empresa);
+
           context.go('/main');
           break;
 
         case 'pendiente':
         case 'rechazado':
-          // Guardar sesión temporal mientras completa verificación
+          // ✅ Guardar perfil
           await SessionManager.setProfile(profile);
 
-          final cameras = await availableCameras();
-          final backCamera = cameras.firstWhere(
-            (cam) => cam.lensDirection == CameraLensDirection.back,
-          );
+          // ✅ Buscar empresa
+          final empresa = await SessionManager.getEmpresaFromDB(profile.id);
 
-          if (!mounted) return;
+          // ✅ Guardar empresa
+          await SessionManager.setProfile(profile, empresa: empresa);
+
           context.go('/capture-document', extra: {
-            'camera': backCamera,
             'perfilId': profile.id,
           });
           break;
@@ -361,13 +368,3 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
     _showSnackBar(context, 'Funcionalidad de recuperación de contraseña');
   }
 }
-
-
-/**
- * ME genero esto
- * // ---------------- REGISTRO ----------------
-
-
- * 
- * 
- */

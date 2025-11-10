@@ -1,7 +1,5 @@
-import 'package:ezride/flutter_flow/flutter_flow_drop_down.dart';
+import 'dart:ui';
 import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
-import 'package:ezride/flutter_flow/flutter_flow_util.dart';
-import 'package:ezride/flutter_flow/form_field_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -76,187 +74,230 @@ class _VehicleSearchWidgetState extends State<VehicleSearchWidget> {
     );
   }
 
-  void _onFilterChanged() => _notifyFiltersChanged();
-
   @override
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
-    final width = MediaQuery.of(context).size.width;
-
-    final bool isSmallScreen = width < 400;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(12),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(20),
+          color: theme.secondaryBackground.withOpacity(0.90),
+          borderRadius: BorderRadius.circular(26),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
             ),
           ],
-          border: Border.all(color: widget.borderColor.withOpacity(0.2)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 🔍 Campo de búsqueda
-            TextFormField(
-              controller: _searchController,
-              focusNode: _searchFocusNode,
-              decoration: InputDecoration(
-                hintText: '¿A dónde quieres ir?',
-                hintStyle: theme.bodyMedium.copyWith(
-                  color: theme.secondaryText,
-                  fontFamily: GoogleFonts.lato().fontFamily,
-                ),
-                prefixIcon: Icon(Icons.search_rounded, color: theme.primaryText),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: Icon(Icons.clear, color: theme.secondaryText),
-                        onPressed: _clearSearch,
-                      )
-                    : null,
-                filled: true,
-                fillColor: theme.primaryBackground,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      BorderSide(color: widget.borderColor.withOpacity(0.4)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: widget.borderColor, width: 1.5),
-                ),
-              ),
-              style: theme.bodyMedium.copyWith(
-                fontFamily: GoogleFonts.lato().fontFamily,
-              ),
-              onFieldSubmitted: (_) => _submitSearch(),
-            ),
-
-            if (widget.showAllFilters) ...[
-              const SizedBox(height: 16),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: isSmallScreen
-                    ? Column(
-                        children: _buildFilterWidgets(context)
-                            .map((e) => Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 6),
-                                  child: e,
-                                ))
-                            .toList(),
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: _buildFilterWidgets(context)
-                            .map((e) => Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 4),
-                                    child: e,
-                                  ),
-                                ))
-                            .toList(),
-                      ),
-              ),
-            ],
+            _buildSearchBar(theme),
+            const SizedBox(height: 20),
+            if (widget.showAllFilters) _buildFilterButtons(theme),
           ],
         ),
       ),
     );
   }
 
-  List<Widget> _buildFilterWidgets(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-
-    return [
-      // 🚗 Tipo de vehículo
-      FlutterFlowDropDown<String>(
-        margin: const EdgeInsetsDirectional.fromSTEB(8, 0, 8, 0),
-        controller: FormFieldController<String>(_selectedType),
-        options: const ['Automóvil', 'Camioneta', 'SUV', 'Van'],
-        onChanged: (val) {
-          setState(() => _selectedType = val);
-          _onFilterChanged();
-        },
-        height: 45,
-        textStyle: theme.bodySmall.copyWith(
-          fontFamily: GoogleFonts.lato().fontFamily,
-          fontWeight: FontWeight.w500,
-        ),
-        hintText: 'Tipo',
-        icon: Icon(Icons.directions_car_rounded,
-            color: theme.primaryText, size: 18),
-        fillColor: theme.primaryBackground,
-        elevation: 2,
-        borderColor: widget.borderColor.withOpacity(0.4),
-        borderWidth: 1,
-        borderRadius: 16,
-        hidesUnderline: true,
+  // ✅ ELEGANTE SEARCH BAR
+  Widget _buildSearchBar(dynamic theme) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.alternate.withOpacity(0.5)),
+        color: theme.primaryBackground,
       ),
-
-      // ⚙️ Transmisión
-      FlutterFlowDropDown<String>(
-        margin: const EdgeInsetsDirectional.fromSTEB(8, 0, 8, 0),
-        controller: FormFieldController<String>(_selectedTransmission),
-        options: const ['Manual', 'Automática'],
-        onChanged: (val) {
-          setState(() => _selectedTransmission = val);
-          _onFilterChanged();
-        },
-        height: 45,
-        textStyle: theme.bodySmall.copyWith(
-          fontFamily: GoogleFonts.lato().fontFamily,
-          fontWeight: FontWeight.w500,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: TextFormField(
+        controller: _searchController,
+        focusNode: _searchFocusNode,
+        decoration: InputDecoration(
+          hintText: "¿A dónde quieres ir?",
+          border: InputBorder.none,
+          prefixIcon: Icon(Icons.search_rounded, color: theme.primaryText),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: Icon(Icons.close_rounded, color: theme.secondaryText),
+                  onPressed: _clearSearch,
+                )
+              : null,
         ),
-        hintText: 'Transmisión',
-        icon:
-            Icon(Icons.settings_rounded, color: theme.primaryText, size: 18),
-        fillColor: theme.primaryBackground,
-        elevation: 2,
-        borderColor: widget.borderColor.withOpacity(0.4),
-        borderWidth: 1,
-        borderRadius: 16,
-        hidesUnderline: true,
+        onFieldSubmitted: (_) => _submitSearch(),
+        style: theme.bodyMedium,
       ),
+    );
+  }
 
-      // 💲 Precio
-      FlutterFlowDropDown<String>(
-        margin: const EdgeInsetsDirectional.fromSTEB(8, 0, 8, 0),
-        controller: FormFieldController<String>(_selectedPriceRange),
-        options: const [
-          '\$',
-          '\$\$',
-          '\$\$\$',
+  // ✅ NUEVOS BOTONES DE FILTRO — estilo tarjeta compacta
+// ✅ NUEVA BOTONERA: 3 botones horizontales
+Widget _buildFilterButtons(dynamic theme) {
+  return Row(
+    children: [
+      Expanded(
+        child: _buildFilterButton(
+          label: "Tipo",
+          value: _selectedType,
+          icon: Icons.directions_car_filled_rounded,
+          options: ["Automóvil", "Camioneta", "SUV", "Van"],
+          onSelected: (v) => setState(() => _selectedType = v),
+        ),
+      ),
+      const SizedBox(width: 10),
+      Expanded(
+        child: _buildFilterButton(
+          label: "Transmisión",
+          value: _selectedTransmission,
+          icon: Icons.settings_rounded,
+          options: ["Manual", "Automática"],
+          onSelected: (v) => setState(() => _selectedTransmission = v),
+        ),
+      ),
+      const SizedBox(width: 10),
+      Expanded(
+        child: _buildFilterButton(
+          label: "Precio",
+          value: _selectedPriceRange,
+          icon: Icons.attach_money_rounded,
+          options: ["\$", "\$\$", "\$\$\$"],
+          onSelected: (v) => setState(() => _selectedPriceRange = v),
+        ),
+      ),
+    ],
+  );
+}
+
+// ✅ NUEVO BOTÓN con selección azul/blanco
+Widget _buildFilterButton({
+  required String label,
+  required String? value,
+  required IconData icon,
+  required List<String> options,
+  required Function(String) onSelected,
+}) {
+  final bool selected = value != null && value.isNotEmpty;
+
+  return GestureDetector(
+    onTap: () => _showNewBottomSelector(label, options, onSelected),
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: selected ? const Color(0xFF0035FF) : Colors.white,
+        border: Border.all(
+          color: selected
+              ? const Color(0xFF0035FF)
+              : Colors.grey.withOpacity(0.3),
+        ),
+        boxShadow: [
+          if (selected)
+            BoxShadow(
+              color: const Color(0xFF0035FF).withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
         ],
-        onChanged: (val) {
-          setState(() => _selectedPriceRange = val);
-          _onFilterChanged();
-        },
-        height: 45,
-        textStyle: theme.bodySmall.copyWith(
-          fontFamily: GoogleFonts.lato().fontFamily,
-          fontWeight: FontWeight.w500,
-        ),
-        hintText: 'Precio',
-        icon: Icon(Icons.attach_money_rounded,
-            color: theme.primaryText, size: 18),
-        fillColor: theme.primaryBackground,
-        elevation: 2,
-        borderColor: widget.borderColor.withOpacity(0.4),
-        borderWidth: 1,
-        borderRadius: 16,
-        hidesUnderline: true,
       ),
-    ];
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 18,
+            color: selected ? Colors.white : Colors.black87,
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              value ?? label,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.lato(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: selected ? Colors.white : Colors.black87,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+
+  // ✅ NUEVO PANEL INFERIOR — estilo Airbnb / Booking
+  void _showNewBottomSelector(
+    String title,
+    List<String> options,
+    Function(String) onSelected,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.lato(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // ✅ Botones redondeados tipo selector moderno
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: options.map((opt) {
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      onSelected(opt);
+                      _notifyFiltersChanged();
+                    },
+                    child: Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.blue.shade300,
+                        ),
+                      ),
+                      child: Text(
+                        opt,
+                        style: GoogleFonts.lato(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+
+              const SizedBox(height: 30),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

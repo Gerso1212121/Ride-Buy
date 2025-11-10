@@ -1,9 +1,10 @@
-import 'package:ezride/App/DOMAIN/Entities/vehicle_entity.dart';
+import 'package:ezride/App/DATA/models/Vehiculo_model.dart';
 import 'package:ezride/Core/enums/enums.dart';
 import 'package:ezride/Services/render/render_db_client.dart';
 
 class VehicleRemoteDataSource {
-  Future<List<Vehicle>> searchVehicles({
+  // Método existente de búsqueda
+  Future<List<VehicleModel>> searchVehicles({
     required String query,
     String? type,
     String? transmission,
@@ -55,32 +56,59 @@ class VehicleRemoteDataSource {
     );
 
     return rows.map((row) {
-      return Vehicle(
-        id: row['id'],
-        empresaId: row['empresa_id'],
-        titulo: row['titulo'],
-        marca: row['marca'],
-        modelo: row['modelo'],
-        year: row['anio'],
-        placa: row['placa'],
-        precioPorDia: double.parse(row['precio_por_dia'].toString()),
-        status: VehicleStatus.values.firstWhere(
-          (e) => e.name == row['status'],
-          orElse: () => VehicleStatus.disponible,
-        ),
-        transmision: row['transmision'],
-        combustible: row['combustible'],
-        capacidad: row['capacidad'],
-        puertas: row['puertas'],
-        multasPendientes: row['multas_pendientes'],
-        telemetriaEnabled: row['telemetria_enabled'],
-        createdAt: row['created_at'],
-        updatedAt: row['updated_at'],
-      );
+      return VehicleModel.fromMap(row);
     }).toList();
   }
 
-  Future<List<Vehicle>> getRecommendedVehicles() async {
+  // NUEVO: Crear vehículo
+  Future<VehicleModel> createVehicle(VehicleModel vehicle) async {
+    const sql = '''
+      INSERT INTO vehiculos (
+        id, empresa_id, titulo, marca, modelo, anio, placa,
+        precio_por_dia, status, capacidad, transmision, combustible,
+        kilometraje, color, puertas, dueno_actual, soa_number,
+        circulacion_vence, soa_vence, multas_pendientes, gps_device_id,
+        insurance_provider, telemetria_enabled, telemetria_tracker_id,
+        imagen1, imagen2
+      ) VALUES (
+        @id, @empresa_id, @titulo, @marca, @modelo, @anio, @placa,
+        @precio_por_dia, @status, @capacidad, @transmision, @combustible,
+        @kilometraje, @color, @puertas, @dueno_actual, @soa_number,
+        @circulacion_vence, @soa_vence, @multas_pendientes, @gps_device_id,
+        @insurance_provider, @telemetria_enabled, @telemetria_tracker_id,
+        @imagen1, @imagen2
+      ) RETURNING *;
+    ''';
+
+    final rows = await RenderDbClient.query(
+      sql,
+      parameters: vehicle.toMap(),
+    );
+
+    if (rows.isEmpty) {
+      throw Exception('No se pudo crear el vehículo');
+    }
+
+    return VehicleModel.fromMap(rows.first);
+  }
+
+  // NUEVO: Obtener vehículos por empresa
+  Future<List<VehicleModel>> getVehiclesByEmpresa(String empresaId) async {
+    const sql = '''
+      SELECT * FROM vehiculos 
+      WHERE empresa_id = @empresaId
+      ORDER BY created_at DESC;
+    ''';
+
+    final rows = await RenderDbClient.query(
+      sql,
+      parameters: {'empresaId': empresaId},
+    );
+
+    return rows.map((row) => VehicleModel.fromMap(row)).toList();
+  }
+
+  Future<List<VehicleModel>> getRecommendedVehicles() async {
     return searchVehicles(
       query: '',
       type: null,

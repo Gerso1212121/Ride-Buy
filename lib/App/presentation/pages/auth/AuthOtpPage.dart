@@ -75,9 +75,10 @@ class _AuthOtpPageState extends State<AuthOtpPage>
   }
 
   // ✅ Helper seguro para cerrar solo el modal
-  void closeModal() {
-    if (Navigator.of(context, rootNavigator: true).canPop()) {
-      Navigator.of(context, rootNavigator: true).pop();
+  void safeCloseModal() {
+    final nav = Navigator.of(context, rootNavigator: true);
+    if (nav.canPop()) {
+      nav.pop();
     }
   }
 
@@ -111,7 +112,8 @@ class _AuthOtpPageState extends State<AuthOtpPage>
       if (!mounted) return;
 
       // ✅ Cerrar modal de carga
-      closeModal();
+      safeCloseModal();
+      ();
 
       if (profile != null) {
         // 🎉 Modal éxito
@@ -123,17 +125,20 @@ class _AuthOtpPageState extends State<AuthOtpPage>
           iconColor: Colors.green,
         );
 
-        closeModal(); // Cierra modal de éxito
+        safeCloseModal();
+        (); // Cierra modal de éxito
+
+        safeCloseModal();
 
         await SessionManager.setProfile(profile);
-
         final cameras = await availableCameras();
-        if (!mounted) return;
 
-        // 🚀 Redirección correcta
-        context.push('/capture-document', extra: {
-          'perfilId': profile.id,
-          'camera': cameras.first,
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          context.go('/capture-document', extra: {
+            'perfilId': profile.id,
+            'camera': cameras.first,
+          });
         });
       } else {
         await showGlobalStatusModal(
@@ -143,12 +148,14 @@ class _AuthOtpPageState extends State<AuthOtpPage>
           icon: Icons.error_outline,
           iconColor: Colors.redAccent,
         );
-        closeModal();
+        safeCloseModal();
+        ();
       }
     } catch (e) {
       if (!mounted) return;
 
-      closeModal(); // cerrar modal carga
+      safeCloseModal();
+      (); // cerrar modal carga
 
       String errorMessage = e.toString().contains('expirado')
           ? 'El código ha expirado. Solicita uno nuevo.'
@@ -162,7 +169,8 @@ class _AuthOtpPageState extends State<AuthOtpPage>
         iconColor: Colors.redAccent,
       );
 
-      closeModal();
+      safeCloseModal();
+      ();
 
       setState(() {
         _canResend = true;

@@ -60,18 +60,23 @@ CREATE TABLE IF NOT EXISTS public.empresas (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   nombre text NOT NULL,
-  nit text UNIQUE, -- 🔒 único
-  nrc text UNIQUE, -- 🔒 único
-  direccion text, -- La dirección sigue siendo útil, pero también debes almacenar las coordenadas
-  telefono text UNIQUE, -- 🔒 único
+  nit text UNIQUE,
+  nrc text UNIQUE,
+  direccion text,
+  telefono text UNIQUE,
   estado_verificacion text DEFAULT 'pendiente'
     CHECK (estado_verificacion IN ('pendiente','en_revision','verificado','rechazado')),
-  email text UNIQUE, -- Correo de la empresa (agregado como único)
-  latitud float8,  -- Latitud de la empresa (coordenada geográfica)
-  longitud float8, -- Longitud de la empresa (coordenada geográfica)
+  email text UNIQUE,
+  latitud float8,
+  longitud float8,
+  
+  -- ✅ NUEVAS COLUMNAS
+  imagen_perfil text,
+  imagen_banner text,
+
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE(owner_id, nombre) -- 🔒 combinación única
+  UNIQUE(owner_id, nombre)
 );
 ''';
 
@@ -82,21 +87,26 @@ CREATE TABLE IF NOT EXISTS public.empresas (
     // 🚗 Tabla de vehículos
     // ===========================================================
     const createVehiculosSQL = '''
-    CREATE TABLE IF NOT EXISTS public.vehiculos (
-      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      empresa_id uuid REFERENCES public.empresas(id) ON DELETE CASCADE,
-      marca text NOT NULL,
-      modelo text NOT NULL,
-      anio int,
-      placa text UNIQUE, -- 🔒 único
-      color text,
-      tipo text,
-      estado text DEFAULT 'disponible'
-        CHECK (estado IN ('disponible','en_renta','mantenimiento','inactivo')),
-      created_at timestamptz NOT NULL DEFAULT now(),
-      updated_at timestamptz NOT NULL DEFAULT now(),
-      UNIQUE(empresa_id, placa) -- 🔒 evita que una empresa repita placa
-    );
+CREATE TABLE IF NOT EXISTS public.vehiculos (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  empresa_id uuid REFERENCES public.empresas(id) ON DELETE CASCADE,
+  marca text NOT NULL,
+  modelo text NOT NULL,
+  anio int,
+  placa text UNIQUE,
+  color text,
+  tipo text,
+  estado text DEFAULT 'disponible'
+    CHECK (estado IN ('disponible','en_renta','mantenimiento','inactivo')),
+
+  -- ✅ NUEVAS COLUMNAS
+  imagen1 text,
+  imagen2 text,
+
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(empresa_id, placa)
+);
     ''';
     await RenderDbClient.query(createVehiculosSQL);
     print('✅ Tabla "vehiculos" creada o existente.');

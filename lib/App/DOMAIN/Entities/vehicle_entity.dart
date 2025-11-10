@@ -1,12 +1,12 @@
 import 'package:ezride/Core/enums/enums.dart';
 
-class Vehicle {
+class VehicleEntity {
   final String id;
   final String empresaId;
   final String titulo;
   final String marca;
   final String modelo;
-  final int year;
+  final int? anio;
   final String placa;
   final double precioPorDia;
   final VehicleStatus status;
@@ -17,20 +17,26 @@ class Vehicle {
   final String? color;
   final int puertas;
   final String? duenoActual;
+  final String? soaNumber;
   final DateTime? circulacionVence;
   final DateTime? soaVence;
   final bool multasPendientes;
+  final String? gpsDeviceId;
+  final String? insuranceProvider;
   final bool telemetriaEnabled;
+  final String? telemetriaTrackerId;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? imagen1;
+  final String? imagen2;
 
-  Vehicle({
+  VehicleEntity({
     required this.id,
     required this.empresaId,
     required this.titulo,
     required this.marca,
     required this.modelo,
-    required this.year,
+    this.anio,
     required this.placa,
     required this.precioPorDia,
     this.status = VehicleStatus.disponible,
@@ -41,11 +47,17 @@ class Vehicle {
     this.color,
     this.puertas = 4,
     this.duenoActual,
+    this.soaNumber,
     this.circulacionVence,
     this.soaVence,
     this.multasPendientes = false,
+    this.gpsDeviceId,
+    this.insuranceProvider,
     this.telemetriaEnabled = false,
+    this.telemetriaTrackerId,
     required this.createdAt,
     required this.updatedAt,
+    this.imagen1,
+    this.imagen2,
   });
 }

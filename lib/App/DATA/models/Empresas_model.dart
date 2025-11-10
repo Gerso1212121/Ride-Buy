@@ -2,17 +2,22 @@ import 'package:ezride/Core/enums/enums.dart';
 import 'package:ezride/App/DOMAIN/Entities/empresas_entity.dart';
 
 class EmpresasModel extends Empresas {
+  final String? imagenPerfil;
+  final String? imagenBanner;
+
   EmpresasModel({
     required String id,
     required String ownerId,
     required String nombre,
     required String nit,
-    required String ncr,
+    required String nrc,
     required String direccion,
     required String telefono,
     required String email,
-    required double latitud,  // Nueva propiedad
-    required double longitud, // Nueva propiedad
+    required double latitud,
+    required double longitud,
+    this.imagenPerfil,
+    this.imagenBanner,
     VerificationStatus verificationStatus = VerificationStatus.pendiente,
     required DateTime createdAt,
     required DateTime updatedAt,
@@ -21,69 +26,62 @@ class EmpresasModel extends Empresas {
           ownerId: ownerId,
           nombre: nombre,
           nit: nit,
-          ncr: ncr,
+          nrc: nrc,
           direccion: direccion,
           telefono: telefono,
           email: email,
           latitud: latitud,
           longitud: longitud,
+          imagenPerfil: imagenPerfil,
+          imagenBanner: imagenBanner,
           verificationStatus: verificationStatus,
           createdAt: createdAt,
           updatedAt: updatedAt,
         );
 
-  // Método para convertir de Empresas a EmpresasModel
-  factory EmpresasModel.fromEmpresas(Empresas empresa) {
-    return EmpresasModel(
-      id: empresa.id,
-      ownerId: empresa.ownerId,
-      nombre: empresa.nombre,
-      nit: empresa.nit,
-      ncr: empresa.ncr,
-      direccion: empresa.direccion,
-      telefono: empresa.telefono,
-      email: empresa.email,
-      latitud: empresa.latitud,
-      longitud: empresa.longitud,
-      verificationStatus: empresa.verificationStatus,
-      createdAt: empresa.createdAt,
-      updatedAt: empresa.updatedAt,
-    );
-  }
-
-  /// Convierte un objeto `Map` en un modelo `EmpresasModel`
   factory EmpresasModel.fromMap(Map<String, dynamic> map) {
     return EmpresasModel(
       id: map['id'] as String,
       ownerId: map['owner_id'] as String,
       nombre: map['nombre'] ?? '',
       nit: map['nit'] ?? '',
-      ncr: map['nrc'] ?? '',
+      nrc: map['nrc'] ?? '',
       direccion: map['direccion'] ?? '',
       telefono: map['telefono'] ?? '',
       email: map['email'] ?? '',
-      latitud: map['latitud'] as double,
-      longitud: map['longitud'] as double,
+      latitud: (map['latitud'] ?? 0).toDouble(),
+      longitud: (map['longitud'] ?? 0).toDouble(),
+
+      // ✅ nuevas columnas
+      imagenPerfil: map['imagen_perfil'],
+      imagenBanner: map['imagen_banner'],
+
       verificationStatus: _parseStatus(map['estado_verificacion']),
-      createdAt: DateTime.parse(map['created_at'].toString()),
-      updatedAt: DateTime.parse(map['updated_at'].toString()),
+      createdAt: DateTime.tryParse(map['created_at'].toString()) ??
+          DateTime.now(),
+      updatedAt: DateTime.tryParse(map['updated_at'].toString()) ??
+          DateTime.now(),
     );
   }
 
-  // Método para enviar los datos a la base de datos
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'owner_id': ownerId,
       'nombre': nombre,
       'nit': nit,
-      'ncr': ncr,
+      'nrc': nrc,
       'direccion': direccion,
       'telefono': telefono,
       'email': email,
       'latitud': latitud,
       'longitud': longitud,
-      'estado_verificacion': verificationStatus.toString().split('.').last,
+
+      // ✅ nuevas columnas
+      'imagen_perfil': imagenPerfil,
+      'imagen_banner': imagenBanner,
+
+      'estado_verificacion': verificationStatus.name,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -95,9 +93,10 @@ class EmpresasModel extends Empresas {
         return VerificationStatus.verificado;
       case 'rechazado':
         return VerificationStatus.rechazado;
+      case 'en_revision':
+        return VerificationStatus.enRevision;
       default:
         return VerificationStatus.pendiente;
     }
   }
 }
-

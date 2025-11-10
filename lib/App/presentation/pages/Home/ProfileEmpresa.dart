@@ -3,11 +3,12 @@ import 'package:ezride/App/DOMAIN/Entities/Auth/PROFILE_user_entity.dart';
 import 'package:ezride/Core/sessions/session_manager.dart';
 import 'package:ezride/Feature/Home/Profle_Empresa/widget/GestionEmpresa.dart';
 import 'package:ezride/Feature/Home/Profle_Empresa/widget/ProfileButton.dart';
-import 'package:ezride/Feature/Home/Profle_Empresa/widget/ProfileEmpresaAppBar_widget.dart';
 import 'package:ezride/Feature/Home/Profle_Empresa/widget/ProfileEmpresaGanancias_widget.dart';
 import 'package:ezride/Feature/Home/Profle_Empresa/widget/ProfileEmpresaHeader_widget.dart';
 import 'package:ezride/Feature/Home/Profle_Empresa/widget/ProfleActions.dart';
+import 'package:ezride/Services/api/s3_service.dart';
 import 'package:ezride/flutter_flow/flutter_flow_util.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -27,7 +28,6 @@ class _PerfilEmpresaWidgetState extends State<PerfilEmpresaWidget> {
   void initState() {
     super.initState();
     _loadEmpresaData();
-    // Escuchar cambios en los datos de la empresa
     SessionManager.empresaNotifier.addListener(_onEmpresaChanged);
     SessionManager.profileNotifier.addListener(_onProfileChanged);
   }
@@ -58,11 +58,25 @@ class _PerfilEmpresaWidgetState extends State<PerfilEmpresaWidget> {
     });
   }
 
-  // Método para obtener la URL de la imagen (puedes personalizar esto)
-  String _getImagenUrl() {
-    // Aquí puedes implementar lógica para obtener la imagen de la empresa
-    // Por ahora usamos una imagen por defecto
-    return 'https://images.unsplash.com/photo-1604172497384-6fea2a1e7092';
+  // ✅ MÉTODO SIMPLIFICADO: URL pública directa para perfil
+// En tu PerfilEmpresaWidget, usa el método optimizado:
+
+// ✅ MÉTODO OPTIMIZADO: URL pública directa para perfil
+  String? _getPerfilImage() {
+    final img = _empresaData?.imagenPerfil;
+    if (img == null || img.isEmpty) return null;
+
+    // ✅ USAR MÉTODO OPTIMIZADO - MÁS RÁPIDO
+    return S3Service.getPublicUrl(img);
+  }
+
+// ✅ MÉTODO OPTIMIZADO: URL pública directa para banner
+  String? _getBannerImage() {
+    final img = _empresaData?.imagenBanner;
+    if (img == null || img.isEmpty) return null;
+
+    // ✅ USAR MÉTODO OPTIMIZADO - MÁS RÁPIDO
+    return S3Service.getPublicUrl(img);
   }
 
   // Método para obtener la descripción de la empresa
@@ -80,6 +94,9 @@ class _PerfilEmpresaWidgetState extends State<PerfilEmpresaWidget> {
       return _buildLoadingState();
     }
 
+    // ✅ DEBUG: Mostrar URLs en consola
+    _debugImages();
+
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -88,7 +105,6 @@ class _PerfilEmpresaWidgetState extends State<PerfilEmpresaWidget> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: Color(0xFFF0F5F9),
-        appBar: EmpresaAppBar(), // Asumiendo que este widget existe
         body: SafeArea(
           top: true,
           child: SingleChildScrollView(
@@ -98,15 +114,16 @@ class _PerfilEmpresaWidgetState extends State<PerfilEmpresaWidget> {
                 PerfilHeader(
                   nombreEmpresa: _empresaData!.nombre,
                   descripcion: _getDescripcion(),
-                  imagenUrl: _getImagenUrl(),
+                  bannerUrl: _getBannerImage(), // ✅ URL pública directa
+                  logoUrl: _getPerfilImage(), // ✅ URL pública directa
                   ubicacion: _empresaData!.direccion,
+                  ncr: _empresaData?.nrc,
                 ),
                 GananciasCard(
                   gananciasTotales: 45280,
                   gananciasMes: 12450,
                   tendenciaPositiva: true,
                 ),
-
                 AccionesGrid(
                   solicitudesPendientes: 12,
                   carrosRentados: 8,
@@ -117,11 +134,12 @@ class _PerfilEmpresaWidgetState extends State<PerfilEmpresaWidget> {
                   onVerInventario: () => print('Ver inventario'),
                 ),
                 GestionEmpresa(
-                  representante: _userProfile?.displayName ?? 'Nombre no disponible',
+                  representante:
+                      _userProfile?.displayName ?? 'Nombre no disponible',
                   cargoRepresentante: 'Representante',
                   usuarioEmail: _userProfile?.email ?? 'Email no disponible',
                   onPerfilEmpresa: () => print('Perfil empresa'),
-                  onRepresentante: () =>context.push('/profile'),
+                  onRepresentante: () => context.push('/profile'),
                   onUsuario: () => print('Usuario'),
                 ),
                 BotonCerrarSesion(
@@ -138,10 +156,21 @@ class _PerfilEmpresaWidgetState extends State<PerfilEmpresaWidget> {
     );
   }
 
+  // ✅ MÉTODO DEBUG: Verificar URLs en consola
+  void _debugImages() {
+    final perfilUrl = _getPerfilImage();
+    final bannerUrl = _getBannerImage();
+
+    print('🖼️ DEBUG IMÁGENES:');
+    print('   - Perfil URL: $perfilUrl');
+    print('   - Banner URL: $bannerUrl');
+    print('   - Imagen Perfil en BD: ${_empresaData?.imagenPerfil}');
+    print('   - Imagen Banner en BD: ${_empresaData?.imagenBanner}');
+  }
+
   Widget _buildLoadingState() {
     return Scaffold(
       backgroundColor: Color(0xFFF0F5F9),
-      appBar: EmpresaAppBar(),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

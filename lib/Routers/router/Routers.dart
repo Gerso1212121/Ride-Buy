@@ -2,19 +2,21 @@ import 'dart:convert';
 import 'package:camera/camera.dart';
 import 'package:dio/dio.dart';
 import 'package:ezride/App/DATA/repositories/Auth/ProfileUser_RepositoryData.dart';
-import 'package:ezride/App/presentation/pages/Home/Profile_User_PRESENTATION.dart';
+import 'package:ezride/App/DOMAIN/Entities/Auth/PROFILE_user_entity.dart';
+import 'package:ezride/App/presentation/pages/Home/ProfileUser_Screen.dart';
 import 'package:ezride/App/presentation/pages/auth/AuthComplete.dart';
 import 'package:ezride/App/presentation/pages/auth/AuthOtpPage.dart';
 import 'package:ezride/App/presentation/pages/auth/AuthPage.dart';
-import 'package:ezride/App/presentation/pages/auth/CAPTURESELFIE_SCREEN.dart';
-import 'package:ezride/App/presentation/pages/auth/UPLOAD_DOCUMENT.dart';
-import 'package:ezride/App/presentation/pages/auth/CAPTURE_SCREEN.dart';
-import 'package:ezride/App/presentation/pages/auth/UPLOAD_identity.dart';
+import 'package:ezride/App/presentation/pages/auth/CameraSelfiePage.dart';
+import 'package:ezride/App/presentation/pages/auth/UploadDocumentPage.dart';
+import 'package:ezride/App/presentation/pages/auth/CameraCapturePage.dart';
+import 'package:ezride/App/presentation/pages/auth/PersonalDataForm.dart';
 import 'package:ezride/Feature/Form_Empresa/FORMEMPRESAS.dart';
-import 'package:ezride/App/presentation/pages/Home/Chat_screen_PRESENTATION.dart';
+import 'package:ezride/App/presentation/pages/Home/Chat_Screen.dart';
+import 'package:ezride/Feature/Form_Empresa/IMAGENES_SELECT.dart';
 import 'package:ezride/Feature/PAY_SUCCESS/Pay_Success_PRESENTATION.dart';
-import 'package:ezride/App/presentation/pages/Home/RentVehicle_screen_PRESENTATION.dart';
-import 'package:ezride/App/presentation/pages/Home/VehicleDetail_screen_PRESENTATION.dart';
+import 'package:ezride/App/presentation/pages/Home/RentVehicle_Screen.dart';
+import 'package:ezride/App/presentation/pages/Home/VehicleDetail_Screen.dart';
 import 'package:ezride/Feature/VERIFICACIONES/Coverage/widgets/Coverage_Complete.dart';
 import 'package:ezride/Feature/VERIFICACIONES/Error/widgets/Error_Auth.dart';
 import 'package:ezride/Routers/router/MainComplete.dart';
@@ -23,56 +25,104 @@ import 'package:ezride/Services/render/render_db_client.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:ezride/Services/render/render_db_client.dart';
-import 'package:ezride/Core/sessions/session_manager.dart';
-import 'package:go_router/go_router.dart';
-
 class AppRouter {
   static final GoRouter router = GoRouter(
     debugLogDiagnostics: true,
-    initialLocation: '/auth', // Ruta inicial
+    initialLocation: '/auth',
     redirect: (context, state) async {
       print('🔄 REDIRECT: ${state.uri}');
-      final hasSession = SessionManager.hasSession;
+// FORZAR carga de sesión ANTES DE USAR hasSession
+      final profile = await SessionManager.loadSession();
+      final hasSession = profile != null;
       final isVerified = SessionManager.isVerified;
       final location = state.uri.toString();
 
       print(
           '📊 Session: $hasSession, Verified: $isVerified, Location: $location');
 
+      // Cargar sesión completa (perfil + empresa)
+      Profile? userProfile;
+      if (hasSession) {
+        userProfile = await SessionManager.loadSession();
+      }
+
       final publicRoutes = ['/auth', '/otp', '/empresa-registro'];
       final isPublic = publicRoutes.any((r) => location.startsWith(r));
 
-      // Si no tiene sesión y no está en una ruta pública, redirige a /auth
+      // Rutas permitidas para usuarios no verificados
+      final verificationRoutes = [
+        '/capture-document',
+        '/selfie-camera',
+        '/upload-document',
+        '/personal-data',
+        '/verificacion-completa',
+        '/error-verificacion'
+      ];
+
+      final isInVerificationFlow =
+          verificationRoutes.any((r) => location.startsWith(r));
+
+      // ===========================================================
+      // 1. Si no tiene sesión y no está en ruta pública → /auth
+      // ===========================================================
       if (!hasSession && !isPublic) {
         print('🚫 No session, redirecting to /auth');
-        return '/auth'; // Redirige siempre a /auth si no tiene sesión
+        return '/auth';
       }
 
-      // Si está autenticado pero no verificado, no redirigir automáticamente a /capture-document
-      if (hasSession && !isVerified) {
-        print('📄 Not verified, staying on current page');
-        return null; // No redirigimos a /capture-document automáticamente
+      // ===========================================================
+      // 2. Si tiene sesión pero el usuario no existe en BD → /auth
+      // ===========================================================
+      if (hasSession && userProfile == null) {
+        print('⚠️ Usuario no existe en BD, redirigiendo a /auth');
+        await SessionManager.clearProfile();
+        return '/auth';
       }
 
-      // Cargar la sesión y verificar que el usuario existe en la base de datos
-      if (hasSession) {
-        final user = await SessionManager.loadSession(); // Cargar la sesión
-        if (user == null) {
-          print(
-              '⚠️ Usuario no existe en la base de datos, redirigiendo a /auth');
-          return '/auth'; // Redirige a /auth si el usuario no está registrado
+      // ===========================================================
+      // 3. Si está autenticado pero no verificado → /capture-document
+      // ===========================================================
+      if (hasSession && userProfile != null && !isVerified) {
+        // Permitir acceso al flujo de verificación y rutas públicas
+        if (!isInVerificationFlow && !isPublic) {
+          print('📄 Usuario no verificado, redirigiendo a /capture-document');
+          return '/capture-document';
         }
+
+        print(
+            '📄 Usuario no verificado, pero está en flujo de verificación o ruta pública');
+        return null;
       }
 
-      // Si está autenticado y verificado, redirige a /main
+      // ===========================================================
+      // 4. Si está autenticado y verificado → /main (si está en auth)
+      // ===========================================================
       if (hasSession && isVerified && location.startsWith('/auth')) {
-        print('✅ Verified, redirecting to /main');
-        return '/main'; // Redirige a la página principal si está verificado
+        print('✅ Usuario verificado, redirigiendo a /main');
+        return '/main';
+      }
+
+      // ===========================================================
+      // 5. Si está en flujo de verificación pero ya está verificado → /main
+      // ===========================================================
+      if (hasSession && isVerified && isInVerificationFlow) {
+        print(
+            '✅ Usuario ya verificado, redirigiendo a /main desde flujo de verificación');
+        return '/main';
+      }
+
+      // ===========================================================
+      // 6. Verificar datos de empresa (solo logging informativo)
+      // ===========================================================
+      if (hasSession && isVerified && SessionManager.currentEmpresa != null) {
+        print(
+            '🏢 Usuario tiene empresa asociada: ${SessionManager.currentEmpresa!.nombre}');
+      } else if (hasSession && isVerified) {
+        print('👤 Usuario verificado pero sin empresa asociada');
       }
 
       print('➡️ No redirect needed');
-      return null; // No hace ninguna redirección si no es necesario
+      return null;
     },
     routes: [
       // Rutas de autenticación
@@ -179,7 +229,6 @@ class AppRouter {
           final extra = (state.extra as Map<String, dynamic>?) ?? {};
           print('📦 CaptureDocument extra: $extra');
           return CameraCapturePage(
-            camera: extra['camera'],
             perfilId: extra['perfilId'],
           );
         },
@@ -190,7 +239,6 @@ class AppRouter {
           print('🤳 Building CameraSelfiePage');
           final extra = state.extra as Map<String, dynamic>? ?? {};
           return CameraSelfiePage(
-            camera: extra['camera'],
             perfilId: extra['perfilId'],
             duiImagePath: extra['duiImagePath'],
           );
@@ -214,6 +262,7 @@ class AppRouter {
           print('🎉 Building VerificacionCompleta');
           return VerificacionCompletaWidget(
             onContinuePressed: () {
+              print('✅ Verificación completa, redirigiendo a /main');
               context.go('/auth');
             },
           );
@@ -250,14 +299,11 @@ class AppRouter {
             onSavePressed: (phone) async {
               print('💾 Save pressed with phone: $phone');
               try {
-                final fullName = extra['fullName'] as String? ??
-                    'Default Name'; // Use 'Default Name' if fullName is null
-                final duiNumber = extra['duiNumber'] as String? ??
-                    '0000000'; // Default value if null
-                final dateOfBirth = extra['dateOfBirth'] as String? ??
-                    '01/01/2000'; // Default value if null
-                final perfilId = extra['perfilId'] as String? ??
-                    ''; // Default to empty string if null
+                final fullName = extra['fullName'] as String? ?? 'Default Name';
+                final duiNumber = extra['duiNumber'] as String? ?? '0000000';
+                final dateOfBirth =
+                    extra['dateOfBirth'] as String? ?? '01/01/2000';
+                final perfilId = extra['perfilId'] as String? ?? '';
 
                 await ProfileUserRepositoryData(dio: Dio()).updateUserProfile(
                   id: perfilId,
@@ -268,15 +314,18 @@ class AppRouter {
                   verificationStatus: "verificado",
                 );
 
+                print(
+                    '✅ Perfil actualizado, redirigiendo a /verificacion-completa');
                 context.go('/verificacion-completa');
               } catch (e) {
                 print('❌ Error al guardar: $e');
                 context.go('/error-verificacion', extra: {
-                  'reason': e.toString(), // Aquí pasas un Map<String, dynamic>
+                  'reason': e.toString(),
                 });
               }
             },
             onCancelPressed: () {
+              print('❌ Cancel pressed, going to /auth');
               context.go('/auth');
             },
           );
@@ -303,8 +352,17 @@ class AppRouter {
           return const ProfileUser();
         },
       ),
+
+      // Ruta adicional para ver datos de empresa (opcional)
+      GoRoute(
+        path: '/empresa-imagenes',
+        builder: (context, state) {
+          final datos = state.extra as Map<String, dynamic>?;
+          return ImagenesSelectWidget(datosEmpresa: datos); // ✅ ahora existe
+        },
+      ),
     ],
   );
 
-  // Widget auxiliar para mostrar pantallas de error
+  // Widget auxiliar para mostrar datos de empresa
 }
