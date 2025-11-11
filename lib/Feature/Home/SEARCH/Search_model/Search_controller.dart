@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:ezride/App/DOMAIN/Entities/vehicle_entity.dart';
+import 'package:ezride/App/DOMAIN/Entities/VEHICLE_ENTITY.dart';
 import 'package:ezride/App/DOMAIN/usecases/search_vehicles_usecase.dart';
 
 class SearchController extends ChangeNotifier {
   final SearchVehiclesUseCase searchVehiclesUseCase;
 
-  List<Vehicle> vehicles = [];
+  List<VehicleEntity> vehicles = [];
   bool isLoading = false;
 
   SearchController(this.searchVehiclesUseCase);

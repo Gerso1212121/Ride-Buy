@@ -7,6 +7,7 @@ class AccionesGrid extends StatelessWidget {
   final int solicitudesPendientes;
   final int carrosRentados;
   final int carrosDisponibles;
+  final int totalInventario; // ✅ NUEVO: Total de vehículos en inventario
   final VoidCallback? onAgregarCarro;
   final VoidCallback? onVerSolicitudes;
   final VoidCallback? onVerRentados;
@@ -17,6 +18,7 @@ class AccionesGrid extends StatelessWidget {
     required this.solicitudesPendientes,
     required this.carrosRentados,
     required this.carrosDisponibles,
+    required this.totalInventario, // ✅ NUEVO: Hacerlo requerido
     this.onAgregarCarro,
     this.onVerSolicitudes,
     this.onVerRentados,
@@ -61,7 +63,8 @@ class AccionesGrid extends StatelessWidget {
             context: context,
             icono: Icons.garage_rounded,
             titulo: 'En Inventario',
-            subtitulo: '$carrosDisponibles disponibles',
+            // ✅ ACTUALIZADO: Mostrar "X de Y disponibles"
+            subtitulo: '$carrosDisponibles de $totalInventario disponibles',
             colorIcono: Color(0xFFFC964D),
             colorSubtitulo: Color(0xFFFC964D),
             onTap: onVerInventario,

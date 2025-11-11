@@ -1,8 +1,9 @@
-import '../Entities/vehicle_entity.dart';
+import 'package:ezride/App/DATA/models/Vehiculo_model.dart';
+import '../Entities/VEHICLE_ENTITY.dart';
 import 'dart:io';
 
 abstract class VehicleRepositoryDomain {
-  Future<List<VehicleEntity>> searchVehicles({
+  Future<List<VehicleModel>> searchVehicles({
     required String query,
     String? type,
     String? transmission,
@@ -10,10 +11,10 @@ abstract class VehicleRepositoryDomain {
     double? maxPrice,
   });
 
-  Future<List<VehicleEntity>> getRecommendedVehicles();
+  Future<List<VehicleModel>> getRecommendedVehicles();
 
-  // NUEVOS MÉTODOS
-  Future<VehicleEntity> createVehicle({
+  // NUEVOS MÉTODOS - ACTUALIZADO
+  Future<VehicleModel> createVehicle({
     required String empresaId,
     required String titulo,
     required String marca,
@@ -24,6 +25,7 @@ abstract class VehicleRepositoryDomain {
     required File imagenVehiculo,
     required File imagenPlaca,
     String? color,
+    String? tipo, // ✅ AGREGAR ESTE PARÁMETRO
     int? capacidad,
     String? transmision,
     String? combustible,

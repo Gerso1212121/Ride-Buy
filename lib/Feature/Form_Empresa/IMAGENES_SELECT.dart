@@ -1,3 +1,4 @@
+import 'package:ezride/Core/widgets/Modals/GlobalModalAction.widget.dart';
 import 'package:ezride/Services/api/s3_service.dart';
 import 'package:flutter/material.dart';
 import 'package:ezride/App/DATA/repositories/EmpresaRepository_data.dart';
@@ -149,38 +150,25 @@ class _ImagenesSelectWidgetState extends State<ImagenesSelectWidget> {
   }
 
   void _mostrarError(String titulo, String mensaje) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(titulo),
-        content: Text(mensaje),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
-          ),
-        ],
-      ),
+    showGlobalStatusModalAction(
+      context,
+      title: titulo,
+      message: mensaje,
+      icon: Icons.error,
+      iconColor: Colors.red,
+      confirmText: "OK",
     );
   }
 
   void _mostrarExito(String titulo, String mensaje) {
-    showDialog(
-      barrierDismissible: false,
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(titulo, style: const TextStyle(color: Colors.green)),
-        content: Text(mensaje),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.go('/main');
-            },
-            child: const Text("Continuar al Inicio"),
-          ),
-        ],
-      ),
+    showGlobalStatusModalAction(
+      context,
+      title: titulo,
+      message: mensaje,
+      icon: Icons.check_circle,
+      iconColor: Colors.green,
+      confirmText: "Continuar al Inicio",
+      onConfirm: () => context.go('/main'),
     );
   }
 

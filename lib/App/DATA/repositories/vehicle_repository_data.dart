@@ -1,10 +1,11 @@
 import 'package:ezride/App/DATA/datasources/Auth/vehicle_remote_datasource.dart';
-import 'package:ezride/App/DOMAIN/Entities/vehicle_entity.dart';
 import 'package:ezride/App/DOMAIN/repositories/vehicle_repository_domain.dart';
 import 'package:ezride/App/DATA/models/Vehiculo_model.dart';
 import 'package:ezride/Services/api/azure_validator_service.dart';
 import 'package:ezride/Services/api/s3_service.dart';
+import 'package:ezride/Services/render/render_db_client.dart';
 import 'dart:io';
+import 'package:uuid/uuid.dart';
 
 class VehicleRepositoryData implements VehicleRepositoryDomain {
   final VehicleRemoteDataSource remote;
@@ -12,7 +13,7 @@ class VehicleRepositoryData implements VehicleRepositoryDomain {
   VehicleRepositoryData(this.remote);
 
   @override
-  Future<List<VehicleEntity>> searchVehicles({
+  Future<List<VehicleModel>> searchVehicles({
     required String query,
     String? type,
     String? transmission,
@@ -29,17 +30,68 @@ class VehicleRepositoryData implements VehicleRepositoryDomain {
   }
 
   @override
-  Future<List<VehicleEntity>> getRecommendedVehicles() {
+  Future<List<VehicleModel>> getRecommendedVehicles() {
     return remote.getRecommendedVehicles();
   }
 
   @override
-  Future<List<VehicleEntity>> getVehiclesByEmpresa(String empresaId) {
+  Future<List<VehicleModel>> getVehiclesByEmpresa(String empresaId) {
     return remote.getVehiclesByEmpresa(empresaId);
   }
 
+  // En tu VehicleRepositoryData
+// En tu VehicleRepositoryData
+  Future<bool> hasActiveRent(String vehicleId) async {
+    try {
+      print('🔍 Verificando rentas activas para vehículo: $vehicleId');
+
+      final result = await RenderDbClient.query('''
+      SELECT EXISTS (
+        SELECT 1 FROM public.rentas 
+        WHERE vehiculo_id = @vehicle_id 
+        AND status IN ('confirmada', 'en_curso')
+        AND fecha_entrega_vehiculo >= CURRENT_DATE
+      )
+    ''', parameters: {
+        'vehicle_id': vehicleId, // ✅ Parámetro correcto
+      });
+
+      final hasActiveRent =
+          result.isNotEmpty && (result.first['exists'] == true);
+      print('📊 Vehículo $vehicleId - Tiene renta activa: $hasActiveRent');
+
+      // DEBUG DETALLADO
+      final rentasDebug = await RenderDbClient.query('''
+      SELECT id, status, fecha_inicio_renta, fecha_entrega_vehiculo 
+      FROM public.rentas 
+      WHERE vehiculo_id = @vehicle_id 
+      AND status IN ('confirmada', 'en_curso')
+    ''', parameters: {
+        'vehicle_id': vehicleId,
+      });
+
+      print(
+          '🔎 Rentas confirmadas/en_curso encontradas: ${rentasDebug.length}');
+      for (final renta in rentasDebug) {
+        final ahora = DateTime.now();
+        final fin = DateTime.parse(renta['fecha_entrega_vehiculo'].toString());
+        final haTerminado = ahora.isAfter(fin);
+
+        print('   - ID: ${renta['id']}');
+        print('     Status: ${renta['status']}');
+        print('     Fecha fin: ${renta['fecha_entrega_vehiculo']}');
+        print('     ¿Ha terminado?: $haTerminado');
+      }
+
+      return hasActiveRent;
+    } catch (e) {
+      print('❌ Error en hasActiveRent para $vehicleId: $e');
+      return false;
+    }
+  }
+
   @override
-  Future<VehicleEntity> createVehicle({
+  Future<VehicleModel> createVehicle({
     required String empresaId,
     required String titulo,
     required String marca,
@@ -50,6 +102,7 @@ class VehicleRepositoryData implements VehicleRepositoryDomain {
     required File imagenVehiculo,
     required File imagenPlaca,
     String? color,
+    String? tipo, // ✅ AGREGAR ESTE PARÁMETRO
     int? capacidad,
     String? transmision,
     String? combustible,
@@ -63,55 +116,92 @@ class VehicleRepositoryData implements VehicleRepositoryDomain {
     String? insuranceProvider,
   }) async {
     try {
-      print('🚀 Iniciando creación de vehículo con validación IA...');
+      print('🚀 INICIANDO CREACIÓN DE VEHÍCULO');
+      print('🏢 Empresa ID: $empresaId');
+      print('🚗 Placa: $placa');
+      print('💰 Precio: $precioPorDia');
+      print('🎯 Tipo: $tipo'); // ✅ DEBUG DEL NUEVO CAMPO
 
-      // 1. ✅ VALIDACIÓN CON AZURE GPT-4o
-      print('📸 Validando imágenes con Azure GPT-4o...');
+      // ============================================
+      // ✅ PASO 1: VALIDACIONES PREVIAS
+      // ============================================
+      print('\n📋 PASO 1: Validaciones previas...');
+
+      // Validar que las imágenes existen
+      if (!await imagenVehiculo.exists()) {
+        throw Exception('La imagen del vehículo no existe');
+      }
+
+      if (!await imagenPlaca.exists()) {
+        throw Exception('La imagen de la placa no existe');
+      }
+
+      // ============================================
+      // ✅ PASO 2: VALIDACIÓN CON IA
+      // ============================================
+      print('\n🤖 PASO 2: Validación con Azure GPT-4o...');
+
       final validationResult =
           await AzureValidatorService.validateVehicleImages(
         vehicleImage: imagenVehiculo,
         plateImage: imagenPlaca,
-        mode: 'estricto', // Puedes hacerlo configurable
+        mode: 'estricto',
       );
 
       if (!validationResult['valido']) {
-        throw Exception('❌ Validación fallida: ${validationResult['razon']}');
+        final razon =
+            validationResult['razon'] ?? 'No cumple con los requisitos';
+        throw Exception('Validación IA fallida: $razon');
       }
 
-      print('✅ Imágenes validadas correctamente por IA');
+      print('✅ Validación IA exitosa');
 
-      // 2. ✅ SUBIR IMÁGENES A S3
-      print('☁️ Subiendo imágenes a S3...');
+      // ============================================
+      // ✅ PASO 3: SUBIR IMÁGENES A S3
+      // ============================================
+      print('\n☁️ PASO 3: Subiendo imágenes a S3...');
 
-      final vehicleImageKey =
-          'vehicles/${DateTime.now().millisecondsSinceEpoch}_vehicle.jpg';
-      final plateImageKey =
-          'vehicles/${DateTime.now().millisecondsSinceEpoch}_plate.jpg';
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final empresaFolder = 'empresa_$empresaId/vehiculos';
 
       // Subir imagen del vehículo
+      final vehicleFileName = 'vehicle_${placa}_$timestamp.jpg';
+      print('📸 Subiendo imagen vehículo: $vehicleFileName');
+
       final vehicleUploadResult = await S3Service.uploadImage(
         imageFile: imagenVehiculo,
-        fileName: vehicleImageKey,
-        folder: 'vehicles',
+        fileName: vehicleFileName,
+        folder: empresaFolder,
+        quality: 85,
       );
 
       // Subir imagen de la placa
+      final plateFileName = 'plate_${placa}_$timestamp.jpg';
+      print('📸 Subiendo imagen placa: $plateFileName');
+
       final plateUploadResult = await S3Service.uploadImage(
         imageFile: imagenPlaca,
-        fileName: plateImageKey,
-        folder: 'vehicles',
+        fileName: plateFileName,
+        folder: empresaFolder,
+        quality: 90,
       );
 
-      final vehicleImageUrl = S3Service.getPublicUrl(vehicleImageKey);
-      final plateImageUrl = S3Service.getPublicUrl(plateImageKey);
+      // Obtener URLs públicas
+      final vehicleImageUrl =
+          S3Service.getPublicUrl(vehicleUploadResult['key']);
+      final plateImageUrl = S3Service.getPublicUrl(plateUploadResult['key']);
 
-      print('✅ Imágenes subidas a S3: $vehicleImageUrl, $plateImageUrl');
+      print('✅ Imágenes subidas a S3');
+      print('   🚗 Vehículo: $vehicleImageUrl');
+      print('   🏷️ Placa: $plateImageUrl');
 
-      // 3. ✅ CREAR VEHÍCULO EN BD
-      print('💾 Guardando vehículo en base de datos...');
+      // ============================================
+      // ✅ PASO 4: CREAR VEHÍCULO EN BD
+      // ============================================
+      print('\n💾 PASO 4: Guardando en base de datos...');
 
       final vehicle = VehicleModel(
-        id: '', // Se generará automáticamente en la BD
+        id: const Uuid().v4(),
         empresaId: empresaId,
         titulo: titulo,
         marca: marca,
@@ -120,29 +210,47 @@ class VehicleRepositoryData implements VehicleRepositoryDomain {
         placa: placa,
         precioPorDia: precioPorDia,
         color: color,
+        tipo: tipo, // ✅ PASAR EL NUEVO CAMPO
         capacidad: capacidad ?? 5,
         transmision: transmision ?? 'automatica',
         combustible: combustible ?? 'gasolina',
-        kilometraje: kilometraje,
         puertas: puertas ?? 4,
-        duenoActual: duenoActual,
         soaNumber: soaNumber,
         circulacionVence: circulacionVence,
         soaVence: soaVence,
-        multasPendientes: multasPendientes ?? false,
-        insuranceProvider: insuranceProvider,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         imagen1: vehicleImageUrl,
         imagen2: plateImageUrl,
       );
 
-      final createdVehicle = await remote.createVehicle(vehicle);
-      print('✅ Vehículo creado exitosamente: ${createdVehicle.placa}');
+      // ✅ DEBUG DETALLADO
+      print('🔍 DEBUG VehicleModel antes de enviar a BD:');
+      print('   id: ${vehicle.id}');
+      print('   empresaId: ${vehicle.empresaId}');
+      print('   titulo: ${vehicle.titulo}');
+      print('   marca: ${vehicle.marca}');
+      print('   modelo: ${vehicle.modelo}');
+      print('   placa: ${vehicle.placa}');
+      print('   tipo: ${vehicle.tipo}'); // ✅ DEBUG DEL TIPO
+      print(
+          '   precioPorDia: ${vehicle.precioPorDia} (${vehicle.precioPorDia.runtimeType})');
+      print('   color: ${vehicle.color} (${vehicle.color?.runtimeType})');
+      print('   imagen1: ${vehicle.imagen1} (${vehicle.imagen1?.runtimeType})');
+      print('   imagen2: ${vehicle.imagen2} (${vehicle.imagen2?.runtimeType})');
+      print(
+          '   createdAt: ${vehicle.createdAt} (${vehicle.createdAt.runtimeType})');
+      print(
+          '   updatedAt: ${vehicle.updatedAt} (${vehicle.updatedAt.runtimeType})');
 
+      final createdVehicle = await remote.createVehicle(vehicle);
+
+      print('🎉 VEHÍCULO CREADO EXITOSAMENTE');
       return createdVehicle;
     } catch (e) {
-      print('❌ Error en VehicleRepositoryData.createVehicle: $e');
+      print('❌ ERROR EN CREACIÓN DE VEHÍCULO: $e');
+      print('🔍 Stack trace completo:');
+      print(e.toString());
       rethrow;
     }
   }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:camera/camera.dart';
 import 'package:ezride/Core/sessions/session_manager.dart';
 import 'package:ezride/Core/widgets/Modals/GlobalModal_widget.dart';
@@ -83,7 +85,10 @@ class _AuthOtpPageState extends State<AuthOtpPage>
   }
 
   Future<void> _onVerifyPressed(String otpCode) async {
-    if (otpCode.length != 6) {
+    // ✅ Validación mejorada
+    final cleanOtp = otpCode.trim().replaceAll(' ', '');
+
+    if (cleanOtp.length != 6) {
       await showGlobalStatusModal(
         context,
         title: 'Código incompleto',
@@ -94,6 +99,25 @@ class _AuthOtpPageState extends State<AuthOtpPage>
       return;
     }
 
+    // ✅ Validar que solo contiene números
+    if (!RegExp(r'^[0-9]{6}$').hasMatch(cleanOtp)) {
+      await showGlobalStatusModal(
+        context,
+        title: 'Formato inválido',
+        message: 'El código debe contener solo números.',
+        icon: Icons.error_outline,
+        iconColor: Colors.redAccent,
+      );
+      return;
+    }
+
+    // ✅ Debug info
+    print('🚀 Iniciando verificación OTP');
+    print('📧 Email: ${widget.email}');
+    print('🔢 OTP: $cleanOtp');
+    print('🕐 Hora local: ${DateTime.now()}');
+    print('🕐 Hora UTC: ${DateTime.now().toUtc()}');
+
     // ⏳ Modal de carga
     showGlobalStatusModal(
       context,
@@ -103,19 +127,23 @@ class _AuthOtpPageState extends State<AuthOtpPage>
     );
 
     try {
-      final profile =
-          await widget.profileUserUseCaseGlobal.repository.verifyOtp(
+      final profile = await widget.profileUserUseCaseGlobal.repository
+          .verifyOtp(
         email: widget.email,
-        inputOtp: otpCode,
-      );
+        inputOtp: cleanOtp,
+      )
+          .timeout(const Duration(seconds: 30), onTimeout: () {
+        throw TimeoutException('La verificación tardó demasiado tiempo');
+      });
 
       if (!mounted) return;
 
       // ✅ Cerrar modal de carga
       safeCloseModal();
-      ();
 
       if (profile != null) {
+        print('✅ OTP verificado exitosamente');
+
         // 🎉 Modal éxito
         await showGlobalStatusModal(
           context,
@@ -124,9 +152,6 @@ class _AuthOtpPageState extends State<AuthOtpPage>
           icon: Icons.verified_rounded,
           iconColor: Colors.green,
         );
-
-        safeCloseModal();
-        (); // Cierra modal de éxito
 
         safeCloseModal();
 
@@ -141,6 +166,7 @@ class _AuthOtpPageState extends State<AuthOtpPage>
           });
         });
       } else {
+        print('❌ OTP incorrecto o expirado');
         await showGlobalStatusModal(
           context,
           title: 'Código incorrecto',
@@ -149,17 +175,47 @@ class _AuthOtpPageState extends State<AuthOtpPage>
           iconColor: Colors.redAccent,
         );
         safeCloseModal();
-        ();
       }
-    } catch (e) {
-      if (!mounted) return;
+    } on TimeoutException catch (e) {
+      print('⏰ Timeout en verificación OTP: $e');
+      safeCloseModal();
+
+      await showGlobalStatusModal(
+        context,
+        title: 'Tiempo agotado',
+        message:
+            'La verificación tardó demasiado. Revisa tu conexión a internet.',
+        icon: Icons.signal_wifi_off,
+        iconColor: Colors.orange,
+      );
 
       safeCloseModal();
-      (); // cerrar modal carga
 
-      String errorMessage = e.toString().contains('expirado')
-          ? 'El código ha expirado. Solicita uno nuevo.'
-          : 'Ocurrió un error al verificar el código.';
+      setState(() {
+        _canResend = true;
+        _remainingTime = 0;
+      });
+    } catch (e) {
+      print('❌ Error en verificación OTP: $e');
+
+      safeCloseModal();
+
+      // ✅ Manejo específico de errores
+      String errorMessage;
+      final errorString = e.toString().toLowerCase();
+
+      if (errorString.contains('expirado')) {
+        errorMessage = 'El código ha expirado. Solicita uno nuevo.';
+      } else if (errorString.contains('inválido') ||
+          errorString.contains('intentos')) {
+        errorMessage = e.toString(); // Mostrar el mensaje original del backend
+      } else if (errorString.contains('timeout') ||
+          errorString.contains('socket')) {
+        errorMessage = 'Problema de conexión. Revisa tu internet.';
+      } else {
+        errorMessage =
+            'Ocurrió un error al verificar el código: ${e.toString()}';
+      }
 
       await showGlobalStatusModal(
         context,
@@ -170,7 +226,6 @@ class _AuthOtpPageState extends State<AuthOtpPage>
       );
 
       safeCloseModal();
-      ();
 
       setState(() {
         _canResend = true;

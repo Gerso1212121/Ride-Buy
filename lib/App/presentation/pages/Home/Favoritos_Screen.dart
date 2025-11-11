@@ -1,7 +1,11 @@
+import 'package:ezride/Core/widgets/Modals/GlobalModalAction.widget.dart';
 import 'package:ezride/Feature/Home/Favoritos/widgets/FavoritosCard_widget.dart';
 import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+// Importa tu modal personalizado (asegúrate de que la ruta sea correcta)
+// Si está en el mismo archivo, no necesitas importarlo
 
 class FavCards extends StatefulWidget {
   const FavCards({Key? key}) : super(key: key);
@@ -244,36 +248,28 @@ PreferredSizeWidget _buildAppBar(BuildContext context) {
   }
 
   void _handleClearAll() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Limpiar favoritos'),
-        content: const Text(
-            '¿Estás seguro de que quieres eliminar todos tus vehículos favoritos?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+    showGlobalStatusModalAction(
+      context,
+      title: 'Limpiar favoritos',
+      message: '¿Estás seguro de que quieres eliminar todos tus vehículos favoritos?',
+      icon: Icons.delete_outline,
+      iconColor: Colors.red,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      onConfirm: () {
+        setState(() {
+          _favoriteVehicles.clear();
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Todos los favoritos han sido eliminados'),
           ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _favoriteVehicles.clear();
-              });
-              Navigator.pop(context);
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('Todos los favoritos han sido eliminados')),
-              );
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
+        );
+      },
+      onCancel: () {
+        // No se necesita hacer nada, el modal se cierra automáticamente
+      },
     );
   }
 

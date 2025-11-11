@@ -92,22 +92,38 @@ CREATE TABLE IF NOT EXISTS public.vehiculos (
   empresa_id uuid REFERENCES public.empresas(id) ON DELETE CASCADE,
   marca text NOT NULL,
   modelo text NOT NULL,
-  anio int,
-  placa text UNIQUE,
+  anio int,  -- Nuevo campo para el año del vehículo
+  placa text UNIQUE NOT NULL,
   color text,
   tipo text,
-  estado text DEFAULT 'disponible'
-    CHECK (estado IN ('disponible','en_renta','mantenimiento','inactivo')),
+  estado text DEFAULT 'disponible'  -- Estado del vehículo: 'disponible', 'en_renta', 'mantenimiento', 'inactivo'
+    CHECK (estado IN ('disponible', 'reservado','en_renta', 'mantenimiento', 'inactivo')),
 
-  -- ✅ NUEVAS COLUMNAS
+  -- ✅ Nuevas columnas
   imagen1 text,
   imagen2 text,
+  titulo text,  -- Agregado el campo título
+
+  -- Agregar precio por día
+  precio_por_dia numeric NOT NULL,
+
+  -- Capacidad, transmisión, combustible, puertas, SOA Number, vencimientos
+  capacidad int DEFAULT 5,
+  transmision text DEFAULT 'automatica',
+  combustible text DEFAULT 'gasolina',
+  puertas int DEFAULT 4,
+  soa_number text,
+  circulacion_vence timestamptz,
+  soa_vence timestamptz,
 
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
+
+  -- Restricción de unicidad para empresa_id y placa
   UNIQUE(empresa_id, placa)
 );
-    ''';
+''';
+
     await RenderDbClient.query(createVehiculosSQL);
     print('✅ Tabla "vehiculos" creada o existente.');
 
@@ -153,8 +169,244 @@ CREATE TABLE IF NOT EXISTS public.vehiculos (
     await RenderDbClient.query(createDocumentosSQL);
     print('✅ Tabla "documentos" creada o existente.');
 
-    print(
-        '🎉 Todas las tablas fueron creadas con sus restricciones únicas correctamente.');
+// ===========================================================
+// 📋 Tabla de rentas
+// ===========================================================
+const createRentasSQL = '''
+CREATE TABLE IF NOT EXISTS public.rentas (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  vehiculo_id UUID NOT NULL REFERENCES public.vehiculos(id) ON DELETE RESTRICT,
+  empresa_id UUID NOT NULL REFERENCES public.empresas(id) ON DELETE RESTRICT,
+  cliente_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE RESTRICT,
+  tipo TEXT NOT NULL DEFAULT 'reserva' CHECK (tipo IN ('reserva','renta')),
+  fecha_reserva TIMESTAMPTZ NOT NULL DEFAULT now(),
+  fecha_inicio_renta TIMESTAMPTZ NOT NULL,
+  fecha_entrega_vehiculo TIMESTAMPTZ NOT NULL,
+  pickup_method TEXT NOT NULL DEFAULT 'agencia' CHECK (pickup_method IN ('agencia','domicilio')),
+  pickup_address TEXT,
+  entrega_address TEXT,
+  total NUMERIC(12,2) NOT NULL CHECK (total >= 0),
+  status TEXT NOT NULL DEFAULT 'pendiente' CHECK (status IN ('pendiente','confirmada','en_curso','finalizada','cancelada','expirada','rechazada')),
+  verification_code TEXT,
+  pickup_photos TEXT[],
+  return_photos TEXT[],
+  damage_detected BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT chk_rentas_time_order CHECK (fecha_entrega_vehiculo >= fecha_inicio_renta)
+);
+''';
+await RenderDbClient.query(createRentasSQL);
+print('✅ Tabla "rentas" creada o existente.');
+
+    // ===========================================================
+    // 🚗 INSERTAR VEHÍCULOS DE PRUEBA
+    // ===========================================================
+    print('🚀 Insertando vehículos de prueba...');
+
+    const insertVehiculosSQL = '''
+INSERT INTO public.vehiculos (
+  id, empresa_id, marca, modelo, anio, placa, color, tipo, estado, 
+  imagen1, imagen2, titulo, precio_por_dia, capacidad, transmision, 
+  combustible, puertas, soa_number, circulacion_vence, soa_vence
+) VALUES 
+(
+  'a1b2c3d4-e5f6-7890-abcd-ef1234567891',
+  'c18704a4-cc41-44bb-8305-03bd94d5b565',
+  'Toyota',
+  'Corolla',
+  2023,
+  'P123456',
+  'Blanco',
+  'Sedan',
+  'disponible',
+  'https://example.com/toyota1.jpg',
+  'https://example.com/toyota2.jpg',
+  'Toyota Corolla 2023 - Automático',
+  45.00,
+  5,
+  'automatica',
+  'gasolina',
+  4,
+  'SOA-TOY-001',
+  '2025-12-31 23:59:59',
+  '2025-12-31 23:59:59'
+),
+(
+  'b2c3d4e5-f6g7-8901-bcde-f23456789012',
+  'c18704a4-cc41-44bb-8305-03bd94d5b565',
+  'Honda',
+  'Civic',
+  2024,
+  'P234567',
+  'Negro',
+  'Sedan',
+  'disponible',
+  'https://example.com/honda1.jpg',
+  'https://example.com/honda2.jpg',
+  'Honda Civic 2024 - Full Equipo',
+  50.00,
+  5,
+  'automatica',
+  'gasolina',
+  4,
+  'SOA-HON-002',
+  '2025-12-31 23:59:59',
+  '2025-12-31 23:59:59'
+),
+(
+  'c3d4e5f6-g7h8-9012-cdef-345678901234',
+  'c18704a4-cc41-44bb-8305-03bd94d5b565',
+  'Mazda',
+  'CX-5',
+  2023,
+  'P345678',
+  'Rojo',
+  'SUV',
+  'disponible',
+  'https://example.com/mazda1.jpg',
+  'https://example.com/mazda2.jpg',
+  'Mazda CX-5 2023 - SUV Familiar',
+  65.00,
+  7,
+  'automatica',
+  'gasolina',
+  5,
+  'SOA-MAZ-003',
+  '2025-12-31 23:59:59',
+  '2025-12-31 23:59:59'
+),
+(
+  'd4e5f6g7-h8i9-0123-defg-456789012345',
+  'c18704a4-cc41-44bb-8305-03bd94d5b565',
+  'Hyundai',
+  'Tucson',
+  2024,
+  'P456789',
+  'Azul',
+  'SUV',
+  'disponible',
+  'https://example.com/hyundai1.jpg',
+  'https://example.com/hyundai2.jpg',
+  'Hyundai Tucson 2024 - 4x4',
+  70.00,
+  5,
+  'automatica',
+  'diesel',
+  5,
+  'SOA-HYU-004',
+  '2025-12-31 23:59:59',
+  '2025-12-31 23:59:59'
+),
+(
+  'e5f6g7h8-i9j0-1234-efgh-567890123456',
+  'c18704a4-cc41-44bb-8305-03bd94d5b565',
+  'Nissan',
+  'Versa',
+  2023,
+  'P567890',
+  'Gris',
+  'Sedan',
+  'disponible',
+  'https://example.com/nissan1.jpg',
+  'https://example.com/nissan2.jpg',
+  'Nissan Versa 2023 - Económico',
+  40.00,
+  5,
+  'automatica',
+  'gasolina',
+  4,
+  'SOA-NIS-005',
+  '2025-12-31 23:59:59',
+  '2025-12-31 23:59:59'
+)
+ON CONFLICT (id) DO UPDATE SET
+  empresa_id = EXCLUDED.empresa_id,
+  marca = EXCLUDED.marca,
+  modelo = EXCLUDED.modelo,
+  anio = EXCLUDED.anio,
+  placa = EXCLUDED.placa,
+  color = EXCLUDED.color,
+  tipo = EXCLUDED.tipo,
+  estado = EXCLUDED.estado,
+  imagen1 = EXCLUDED.imagen1,
+  imagen2 = EXCLUDED.imagen2,
+  titulo = EXCLUDED.titulo,
+  precio_por_dia = EXCLUDED.precio_por_dia,
+  capacidad = EXCLUDED.capacidad,
+  transmision = EXCLUDED.transmision,
+  combustible = EXCLUDED.combustible,
+  puertas = EXCLUDED.puertas,
+  soa_number = EXCLUDED.soa_number,
+  circulacion_vence = EXCLUDED.circulacion_vence,
+  soa_vence = EXCLUDED.soa_vence;
+''';
+
+    await RenderDbClient.query(insertVehiculosSQL);
+    print('✅ 5 vehículos de prueba insertados/actualizados.');
+
+    // ===========================================================
+    // 📋 INSERTAR 3 RENTAS CON ESTADO PENDIENTE
+    // ===========================================================
+    print('🚀 Insertando rentas de prueba con estado pendiente...');
+
+    const insertRentasSQL = '''
+INSERT INTO public.rentas (
+  vehiculo_id, empresa_id, cliente_id, tipo, fecha_reserva,
+  fecha_inicio_renta, fecha_entrega_vehiculo, pickup_method,
+  pickup_address, entrega_address, total, status, verification_code
+) VALUES 
+(
+  'a1b2c3d4-e5f6-7890-abcd-ef1234567891',
+  'c18704a4-cc41-44bb-8305-03bd94d5b565',
+  '40aa5ce9-5561-4b5f-92e7-ff910e615759',
+  'reserva',
+  NOW(),
+  NOW() + INTERVAL '2 days',
+  NOW() + INTERVAL '5 days',
+  'agencia',
+  'Agencia Central, San Salvador',
+  'Agencia Central, San Salvador',
+  180.00,
+  'pendiente',
+  'ABC123'
+),
+(
+  'b2c3d4e5-f6g7-8901-bcde-f23456789012',
+  'c18704a4-cc41-44bb-8305-03bd94d5b565',
+  '40aa5ce9-5561-4b5f-92e7-ff910e615759',
+  'renta',
+  NOW(),
+  NOW() + INTERVAL '3 days',
+  NOW() + INTERVAL '7 days',
+  'domicilio',
+  'Calle Principal #123, San Salvador',
+  'Calle Principal #123, San Salvador',
+  250.00,
+  'pendiente',
+  'DEF456'
+),
+(
+  'c3d4e5f6-g7h8-9012-cdef-345678901234',
+  'c18704a4-cc41-44bb-8305-03bd94d5b565',
+  '40aa5ce9-5561-4b5f-92e7-ff910e615759',
+  'reserva',
+  NOW(),
+  NOW() + INTERVAL '1 week',
+  NOW() + INTERVAL '2 weeks',
+  'agencia',
+  'Agencia Norte, Santa Tecla',
+  'Agencia Norte, Santa Tecla',
+  455.00,
+  'pendiente',
+  'GHI789'
+)
+ON CONFLICT (id) DO NOTHING;
+''';
+
+    await RenderDbClient.query(insertRentasSQL);
+    print('✅ 3 rentas con estado "pendiente" insertadas.');
+
+    print('🎉 Todas las tablas y datos de prueba fueron creados correctamente.');
   } catch (e, stack) {
     print('❌ Error creando tablas: $e');
     print(stack);

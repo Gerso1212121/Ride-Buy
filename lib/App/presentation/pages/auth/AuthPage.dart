@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:ezride/App/presentation/pages/auth/AuthOtpPage.dart';
 import 'package:ezride/Core/sessions/session_manager.dart';
 import 'package:ezride/App/presentation/pages/Home/Home_Screen.dart';
+import 'package:ezride/Core/widgets/Modals/GlobalModalAction.widget.dart';
 import 'package:ezride/Routers/router/MainComplete.dart';
 import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
 import 'package:ezride/Feature/AUTH/Auth_Header.dart';
@@ -16,6 +17,10 @@ import 'package:go_router/go_router.dart';
 import '../../../DOMAIN/usecases/Auth/Auth_UseCase.dart';
 import '../../../DATA/repositories/Auth/ProfileUser_RepositoryData.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+// Importa tu modal personalizado
+import 'package:ezride/flutter_flow/flutter_flow_theme.dart'; // Ya está importado
+import 'package:google_fonts/google_fonts.dart'; // Asegúrate de importar GoogleFonts
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -126,7 +131,7 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
       return;
     }
 
-    _showLoadingDialog(context, 'Iniciando sesión...');
+    _showLoadingModal(context, 'Iniciando sesión...');
 
     try {
       final profile = await profileUserUseCaseGlobal.login(
@@ -181,7 +186,7 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
       }
     } catch (e) {
       if (mounted) Navigator.of(context).pop();
-      _showErrorDialog(context, 'Error al iniciar sesión', e.toString());
+      _showErrorModal(context, 'Error al iniciar sesión', e.toString());
     }
   }
 
@@ -216,7 +221,7 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
     }
 
     // Mostrar loading
-    _showLoadingDialog(context, 'Creando tu cuenta...');
+    _showLoadingModal(context, 'Creando tu cuenta...');
 
     try {
       // Llamar al caso de uso — ahora devuelve un RegisterPending
@@ -248,63 +253,27 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
     } catch (e) {
       // Cerrar el loading en caso de error
       if (mounted) Navigator.of(context, rootNavigator: true).pop();
-      _showErrorDialog(context, 'Error al registrar', e.toString());
+      _showErrorModal(context, 'Error al registrar', e.toString());
     }
   }
 
-  // ---------------- DIALOGOS ----------------
-  void _showLoadingDialog(BuildContext context, String message) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: EdgeInsets.zero,
-          child: Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.5),
-            ),
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(width: 20),
-                    Text(message),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+  // ---------------- MODALES PERSONALIZADOS ----------------
+  void _showLoadingModal(BuildContext context, String message) {
+    showGlobalStatusModalAction(
+      context,
+      title: message,
+      isLoading: true,
     );
   }
 
-  void _showErrorDialog(BuildContext context, String title, String message) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Aceptar'),
-            ),
-          ],
-        );
-      },
+  void _showErrorModal(BuildContext context, String title, String message) {
+    showGlobalStatusModalAction(
+      context,
+      title: title,
+      message: message,
+      icon: Icons.error,
+      iconColor: Colors.red,
+      confirmText: "Aceptar",
     );
   }
 
@@ -325,7 +294,7 @@ class AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
     }
   }
 
-// ---------------- NAVEGACION ----------------
+  // ---------------- NAVEGACION ----------------
   void _navigateToAuthComplete(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       try {

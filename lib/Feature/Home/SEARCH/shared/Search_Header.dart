@@ -10,6 +10,9 @@ class VehicleSearchWidget extends StatefulWidget {
   final String initialSearchText;
   final Color borderColor;
   final bool showAllFilters;
+  final bool showLocationButton;
+  final VoidCallback? onLocationPressed;
+  final bool isLocationLoading;
 
   const VehicleSearchWidget({
     super.key,
@@ -19,6 +22,9 @@ class VehicleSearchWidget extends StatefulWidget {
     this.initialSearchText = '',
     this.borderColor = const Color(0xFF0035FF),
     this.showAllFilters = true,
+    this.showLocationButton = false,
+    this.onLocationPressed,
+    this.isLocationLoading = false,
   });
 
   @override
@@ -39,6 +45,14 @@ class _VehicleSearchWidgetState extends State<VehicleSearchWidget> {
     _searchController = TextEditingController(text: widget.initialSearchText);
     _searchFocusNode = FocusNode();
     _searchController.addListener(_onSearchTextChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant VehicleSearchWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialSearchText != widget.initialSearchText) {
+      _searchController.text = widget.initialSearchText;
+    }
   }
 
   @override
@@ -74,6 +88,21 @@ class _VehicleSearchWidgetState extends State<VehicleSearchWidget> {
     );
   }
 
+  void _clearFilters() {
+    setState(() {
+      _selectedType = null;
+      _selectedTransmission = null;
+      _selectedPriceRange = null;
+    });
+    _notifyFiltersChanged();
+  }
+
+  bool get _hasActiveFilters {
+    return _selectedType != null || 
+           _selectedTransmission != null || 
+           _selectedPriceRange != null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
@@ -97,15 +126,54 @@ class _VehicleSearchWidgetState extends State<VehicleSearchWidget> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildSearchBar(theme),
-            const SizedBox(height: 20),
-            if (widget.showAllFilters) _buildFilterButtons(theme),
+            const SizedBox(height: 16),
+            
+            // ✅ BOTÓN DE UBICACIÓN (si está habilitado)
+            if (widget.showLocationButton) _buildLocationButton(theme),
+            
+            if (widget.showLocationButton && widget.showAllFilters) 
+              const SizedBox(height: 12),
+            
+            if (widget.showAllFilters) _buildFilterSection(theme),
           ],
         ),
       ),
     );
   }
 
-  // ✅ ELEGANTE SEARCH BAR
+  // ✅ BOTÓN DE UBICACIÓN
+  Widget _buildLocationButton(dynamic theme) {
+    return SizedBox(
+      height: 48,
+      child: ElevatedButton.icon(
+        onPressed: widget.isLocationLoading ? null : widget.onLocationPressed,
+        icon: widget.isLocationLoading
+            ? SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(theme.primaryText),
+                ),
+              )
+            : const Icon(Icons.location_on_rounded, size: 20),
+        label: widget.isLocationLoading
+            ? const Text('Obteniendo ubicación...')
+            : const Text('Buscar empresas cercanas'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blue[50],
+          foregroundColor: Colors.blue[700],
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.blue[300]!),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ✅ BARRA DE BÚSQUEDA
   Widget _buildSearchBar(dynamic theme) {
     return Container(
       decoration: BoxDecoration(
@@ -114,125 +182,189 @@ class _VehicleSearchWidgetState extends State<VehicleSearchWidget> {
         color: theme.primaryBackground,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: TextFormField(
-        controller: _searchController,
-        focusNode: _searchFocusNode,
-        decoration: InputDecoration(
-          hintText: "¿A dónde quieres ir?",
-          border: InputBorder.none,
-          prefixIcon: Icon(Icons.search_rounded, color: theme.primaryText),
-          suffixIcon: _searchController.text.isNotEmpty
-              ? IconButton(
-                  icon: Icon(Icons.close_rounded, color: theme.secondaryText),
-                  onPressed: _clearSearch,
-                )
-              : null,
-        ),
-        onFieldSubmitted: (_) => _submitSearch(),
-        style: theme.bodyMedium,
+      child: Row(
+        children: [
+          Expanded(
+            child: TextFormField(
+              controller: _searchController,
+              focusNode: _searchFocusNode,
+              decoration: InputDecoration(
+                hintText: "Buscar empresas, vehículos...",
+                border: InputBorder.none,
+                prefixIcon: Icon(Icons.search_rounded, color: theme.primaryText),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.close_rounded, color: theme.secondaryText),
+                        onPressed: _clearSearch,
+                      )
+                    : null,
+              ),
+              onFieldSubmitted: (_) => _submitSearch(),
+              style: theme.bodyMedium,
+            ),
+          ),
+          if (_hasActiveFilters) ...[
+            const SizedBox(width: 8),
+            _buildClearFiltersButton(theme),
+          ],
+        ],
       ),
     );
   }
 
-  // ✅ NUEVOS BOTONES DE FILTRO — estilo tarjeta compacta
-// ✅ NUEVA BOTONERA: 3 botones horizontales
-Widget _buildFilterButtons(dynamic theme) {
-  return Row(
-    children: [
-      Expanded(
-        child: _buildFilterButton(
-          label: "Tipo",
-          value: _selectedType,
-          icon: Icons.directions_car_filled_rounded,
-          options: ["Automóvil", "Camioneta", "SUV", "Van"],
-          onSelected: (v) => setState(() => _selectedType = v),
+  // ✅ BOTÓN PARA LIMPIAR FILTROS
+  Widget _buildClearFiltersButton(dynamic theme) {
+    return GestureDetector(
+      onTap: _clearFilters,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.red[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red[300]!),
+        ),
+        child: Icon(
+          Icons.filter_alt_off_rounded,
+          size: 20,
+          color: Colors.red[600],
         ),
       ),
-      const SizedBox(width: 10),
-      Expanded(
-        child: _buildFilterButton(
-          label: "Transmisión",
-          value: _selectedTransmission,
-          icon: Icons.settings_rounded,
-          options: ["Manual", "Automática"],
-          onSelected: (v) => setState(() => _selectedTransmission = v),
-        ),
-      ),
-      const SizedBox(width: 10),
-      Expanded(
-        child: _buildFilterButton(
-          label: "Precio",
-          value: _selectedPriceRange,
-          icon: Icons.attach_money_rounded,
-          options: ["\$", "\$\$", "\$\$\$"],
-          onSelected: (v) => setState(() => _selectedPriceRange = v),
-        ),
-      ),
-    ],
-  );
-}
+    );
+  }
 
-// ✅ NUEVO BOTÓN con selección azul/blanco
-Widget _buildFilterButton({
-  required String label,
-  required String? value,
-  required IconData icon,
-  required List<String> options,
-  required Function(String) onSelected,
-}) {
-  final bool selected = value != null && value.isNotEmpty;
-
-  return GestureDetector(
-    onTap: () => _showNewBottomSelector(label, options, onSelected),
-    child: AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: selected ? const Color(0xFF0035FF) : Colors.white,
-        border: Border.all(
-          color: selected
-              ? const Color(0xFF0035FF)
-              : Colors.grey.withOpacity(0.3),
-        ),
-        boxShadow: [
-          if (selected)
-            BoxShadow(
-              color: const Color(0xFF0035FF).withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            size: 18,
-            color: selected ? Colors.white : Colors.black87,
+  // ✅ SECCIÓN DE FILTROS
+  Widget _buildFilterSection(dynamic theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header de filtros
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Filtros',
+                style: theme.titleSmall.copyWith(fontWeight: FontWeight.w600),
+              ),
+              if (_hasActiveFilters)
+                GestureDetector(
+                  onTap: _clearFilters,
+                  child: Text(
+                    'Limpiar',
+                    style: theme.bodySmall.copyWith(
+                      color: Colors.blue[600],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              value ?? label,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.lato(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: selected ? Colors.white : Colors.black87,
+        ),
+        
+        // Botones de filtro
+        _buildFilterButtons(theme),
+      ],
+    );
+  }
+
+  // ✅ BOTONERA DE FILTROS
+  Widget _buildFilterButtons(dynamic theme) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildFilterButton(
+            label: "Tipo",
+            value: _selectedType,
+            icon: Icons.directions_car_filled_rounded,
+            options: const ["Automóvil", "Camioneta", "SUV", "Van"],
+            onSelected: (v) => setState(() => _selectedType = v),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildFilterButton(
+            label: "Transmisión",
+            value: _selectedTransmission,
+            icon: Icons.settings_rounded,
+            options: const ["Manual", "Automática"],
+            onSelected: (v) => setState(() => _selectedTransmission = v),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildFilterButton(
+            label: "Precio",
+            value: _selectedPriceRange,
+            icon: Icons.attach_money_rounded,
+            options: const ["\$", "\$\$", "\$\$\$"],
+            onSelected: (v) => setState(() => _selectedPriceRange = v),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ✅ BOTÓN INDIVIDUAL DE FILTRO
+  Widget _buildFilterButton({
+    required String label,
+    required String? value,
+    required IconData icon,
+    required List<String> options,
+    required Function(String) onSelected,
+  }) {
+    final bool selected = value != null && value.isNotEmpty;
+
+    return GestureDetector(
+      onTap: () => _showBottomSelector(label, options, onSelected),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: selected ? const Color(0xFF0035FF) : Colors.white,
+          border: Border.all(
+            color: selected
+                ? const Color(0xFF0035FF)
+                : Colors.grey.withOpacity(0.3),
+          ),
+          boxShadow: [
+            if (selected)
+              BoxShadow(
+                color: const Color(0xFF0035FF).withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: selected ? Colors.white : Colors.black87,
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                value ?? label,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.lato(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: selected ? Colors.white : Colors.black87,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-
-  // ✅ NUEVO PANEL INFERIOR — estilo Airbnb / Booking
-  void _showNewBottomSelector(
+  // ✅ SELECTOR INFERIOR
+  void _showBottomSelector(
     String title,
     List<String> options,
     Function(String) onSelected,
@@ -246,21 +378,31 @@ Widget _buildFilterButton({
       ),
       builder: (context) {
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: GoogleFonts.lato(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.lato(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
               ),
               const SizedBox(height: 20),
 
-              // ✅ Botones redondeados tipo selector moderno
+              // Opciones
               Wrap(
                 spacing: 10,
                 runSpacing: 10,
@@ -272,8 +414,7 @@ Widget _buildFilterButton({
                       _notifyFiltersChanged();
                     },
                     child: Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                       decoration: BoxDecoration(
                         color: Colors.blue.shade50,
                         borderRadius: BorderRadius.circular(14),
@@ -293,7 +434,28 @@ Widget _buildFilterButton({
                 }).toList(),
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 20),
+              
+              // Botón para limpiar selección
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    onSelected('');
+                    _notifyFiltersChanged();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.grey,
+                    side: BorderSide(color: Colors.grey.shade300),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: const Text('Limpiar selección'),
+                ),
+              ),
             ],
           ),
         );

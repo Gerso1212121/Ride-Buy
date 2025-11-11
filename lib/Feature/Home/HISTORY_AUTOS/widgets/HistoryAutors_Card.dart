@@ -13,6 +13,7 @@ class VehiculoCard extends StatelessWidget {
   final String fechaInicio;
   final String fechaFin;
   final String? diasRenta;
+  final String? total; // ✅ AGREGADO: Parámetro total
   final String tipoCard;
   final VoidCallback? onVerDetalles;
   final VoidCallback? onSoporte;
@@ -32,6 +33,7 @@ class VehiculoCard extends StatelessWidget {
     required this.fechaInicio,
     required this.fechaFin,
     this.diasRenta,
+    this.total, // ✅ AGREGADO: En el constructor
     required this.tipoCard,
     this.onVerDetalles,
     this.onSoporte,
@@ -72,6 +74,10 @@ class VehiculoCard extends StatelessWidget {
               const Divider(color: Colors.grey, height: 1),
               const SizedBox(height: 12),
               _buildFechasInfo(context),
+              if (total != null && total!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                _buildTotalInfo(context),
+              ],
               const SizedBox(height: 12),
               _buildBotones(context, isSmallScreen),
             ],
@@ -172,6 +178,42 @@ class VehiculoCard extends StatelessWidget {
     );
   }
 
+  // ✅ NUEVO: Widget para mostrar el total
+  Widget _buildTotalInfo(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.green.shade200, width: 1),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Total:',
+            style: GoogleFonts.figtree(
+              fontWeight: FontWeight.w600,
+              color: theme.primaryText,
+              fontSize: 14,
+            ),
+          ),
+          Text(
+            total!,
+            style: GoogleFonts.figtree(
+              fontWeight: FontWeight.w700,
+              color: Colors.green.shade700,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildColumnaFecha(
     BuildContext context, {
     required String label,
@@ -202,92 +244,119 @@ class VehiculoCard extends StatelessWidget {
     );
   }
 
-Widget _buildBotones(BuildContext context, bool isSmallScreen) {
-  double heightBtn = isSmallScreen ? 34 : 38;
-  double fontSize = isSmallScreen ? 13 : 14;
+  Widget _buildBotones(BuildContext context, bool isSmallScreen) {
+    double heightBtn = isSmallScreen ? 34 : 38;
+    double fontSize = isSmallScreen ? 13 : 14;
 
-  switch (tipoCard) {
-    case 'activa':
-      return _botonRow([
-        _crearBoton(
-          text: 'Ver Detalles',
-          onPressed: onVerDetalles,
-          color: Colors.white,
-          textColor: Colors.blue.shade700,
-          borderColor: Colors.blue.shade700,
-          height: heightBtn,
-          fontSize: fontSize,
-        ),
-      ]);
+    switch (tipoCard) {
+      case 'activa':
+        return _botonRow([
+          _crearBoton(
+            text: 'Ver Detalles',
+            onPressed: onVerDetalles,
+            color: Colors.white,
+            textColor: Colors.blue.shade700,
+            borderColor: Colors.blue.shade700,
+            height: heightBtn,
+            fontSize: fontSize,
+          ),
+          _crearBoton(
+            text: 'Soporte',
+            onPressed: onSoporte,
+            color: Colors.white,
+            textColor: Colors.orange.shade700,
+            borderColor: Colors.orange.shade700,
+            height: heightBtn,
+            fontSize: fontSize,
+          ),
+        ]);
 
-    case 'solicitud':
-      return _botonRow([
-        _crearBoton(
-          text: 'Verificar código',
-          onPressed: onVerificar,
-          color: Color.fromARGB(255, 60, 135, 255), // Fondo bonito y vibrante
-          textColor: Colors.white,        // Texto blanco
-          height: heightBtn,
-          fontSize: fontSize,
-        ),
-      ]);
+      case 'solicitud':
+        return _botonRow([
+          _crearBoton(
+            text: 'Verificar código',
+            onPressed: onVerificar,
+            color: const Color.fromARGB(255, 60, 135, 255),
+            textColor: Colors.white,
+            height: heightBtn,
+            fontSize: fontSize,
+          ),
+          if (onPagar != null)
+            _crearBoton(
+              text: 'Pagar',
+              onPressed: onPagar,
+              color: Colors.green,
+              textColor: Colors.white,
+              height: heightBtn,
+              fontSize: fontSize,
+            ),
+          if (onCancelar != null)
+            _crearBoton(
+              text: 'Cancelar',
+              onPressed: onCancelar,
+              color: Colors.white,
+              textColor: Colors.red.shade700,
+              borderColor: Colors.red.shade700,
+              height: heightBtn,
+              fontSize: fontSize,
+            ),
+        ]);
 
-    case 'historial':
-      return _botonRow([
-        _crearBoton(
-          text: 'Repetir Renta',
-          onPressed: onRepetir,
-          color: Color.fromARGB(255, 57, 146, 255),
-          textColor: Colors.white,
-          height: heightBtn,
-          fontSize: fontSize,
-        ),
-        _crearBoton(
-          text: 'Dejar Reseña',
-          onPressed: onResena,
-          color: Color.fromARGB(255, 255, 255, 255),
-          textColor: Color.fromARGB(255, 31, 91, 255),
-          borderColor: Color.fromARGB(255, 14, 46, 255),
-          height: heightBtn,
-          fontSize: fontSize,
-        ),
-      ]);
+      case 'historial':
+        return _botonRow([
+          _crearBoton(
+            text: 'Repetir Renta',
+            onPressed: onRepetir,
+            color: const Color.fromARGB(255, 57, 146, 255),
+            textColor: Colors.white,
+            height: heightBtn,
+            fontSize: fontSize,
+          ),
+          _crearBoton(
+            text: 'Dejar Reseña',
+            onPressed: onResena,
+            color: const Color.fromARGB(255, 255, 255, 255),
+            textColor: const Color.fromARGB(255, 31, 91, 255),
+            borderColor: const Color.fromARGB(255, 14, 46, 255),
+            height: heightBtn,
+            fontSize: fontSize,
+          ),
+        ]);
 
-    default:
-      return const SizedBox.shrink();
+      default:
+        return const SizedBox.shrink();
+    }
   }
-}
 
-Widget _crearBoton({
-  required String text,
-  required VoidCallback? onPressed,
-  required Color color,
-  required Color textColor,
-  Color? borderColor,
-  required double height,
-  required double fontSize,
-}) {
-  return FFButtonWidget(
-    onPressed: onPressed,
-    text: text,
-    options: FFButtonOptions(
-      height: height,
-      color: color,
-      textStyle: GoogleFonts.figtree(
-        color: textColor,
-        fontSize: fontSize,
-        fontWeight: FontWeight.w600,
+  Widget _crearBoton({
+    required String text,
+    required VoidCallback? onPressed,
+    required Color color,
+    required Color textColor,
+    Color? borderColor,
+    required double height,
+    required double fontSize,
+  }) {
+    return FFButtonWidget(
+      onPressed: onPressed,
+      text: text,
+      options: FFButtonOptions(
+        height: height,
+        color: color,
+        textStyle: GoogleFonts.figtree(
+          color: textColor,
+          fontSize: fontSize,
+          fontWeight: FontWeight.w600,
+        ),
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(
+          color: borderColor ?? Colors.transparent,
+          width: 1.2,
+        ),
+        elevation: 2,
       ),
-      borderRadius: BorderRadius.circular(8),
-      borderSide: BorderSide(
-        color: borderColor ?? Colors.transparent,
-        width: 1.2,
-      ),
-      elevation: 2, // Sombra ligera
-    ),
-  );
-}
-
+    );
+  }
 
   Widget _botonRow(List<Widget> botones) => Row(
         children: botones
@@ -295,6 +364,4 @@ Widget _crearBoton({
             .toList()
           ..removeLast(),
       );
-
-
 }

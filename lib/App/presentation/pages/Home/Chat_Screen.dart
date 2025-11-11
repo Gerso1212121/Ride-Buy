@@ -1,3 +1,4 @@
+import 'package:ezride/App/DOMAIN/Entities/Chat/chat_message_entity.dart';
 import 'package:ezride/Feature/Home/Chat/widget/Chat_Header_widget.dart';
 import 'package:ezride/Feature/Home/Chat/widget/Chat_Message_widget.dart';
 import 'package:ezride/Feature/Home/Chat/widget/Chat_Send_widget.dart';

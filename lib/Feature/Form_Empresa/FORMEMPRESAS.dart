@@ -1,3 +1,4 @@
+import 'package:ezride/Core/widgets/Modals/GlobalModalAction.widget.dart';
 import 'package:flutter/material.dart';
 import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
 import 'package:ezride/flutter_flow/flutter_flow_util.dart';
@@ -63,32 +64,16 @@ class _FormularioEmpresaWidgetState extends State<FormularioEmpresaWidget> {
   }
 
   void _mostrarModalUbicacion() {
-    showDialog(
-      barrierDismissible: false,
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("📍 Ubicación Requerida"),
-          content: const Text(
-              "Para registrar tu empresa necesitamos acceder a tu ubicación actual para mostrar tu negocio en el mapa."),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _obtenerUbicacion();
-              },
-              child: const Text("Activar Ubicación"),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _cerrarPantalla();
-              },
-              child: const Text("Cancelar"),
-            ),
-          ],
-        );
-      },
+    showGlobalStatusModalAction(
+      context,
+      title: "📍 Ubicación Requerida",
+      message: "Para registrar tu empresa necesitamos acceder a tu ubicación actual para mostrar tu negocio en el mapa.",
+      icon: Icons.location_on,
+      iconColor: FlutterFlowTheme.of(context).primary,
+      confirmText: "Activar Ubicación",
+      cancelText: "Cancelar",
+      onConfirm: _obtenerUbicacion,
+      onCancel: _cerrarPantalla,
     );
   }
 
@@ -162,21 +147,14 @@ class _FormularioEmpresaWidgetState extends State<FormularioEmpresaWidget> {
   }
 
   void _mostrarErrorUbicacion(String titulo, String mensaje) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(titulo),
-        content: Text(mensaje),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _cerrarPantalla();
-            },
-            child: const Text("OK"),
-          ),
-        ],
-      ),
+    showGlobalStatusModalAction(
+      context,
+      title: titulo,
+      message: mensaje,
+      icon: Icons.error,
+      iconColor: Colors.red,
+      confirmText: "OK",
+      onConfirm: _cerrarPantalla,
     );
   }
 
@@ -222,20 +200,14 @@ class _FormularioEmpresaWidgetState extends State<FormularioEmpresaWidget> {
     final telefonoRegex = RegExp(r'^[0-9]{8}$');
     return telefonoRegex.hasMatch(telefono);
   }
-
   void _mostrarError(String titulo, String mensaje) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(titulo),
-        content: Text(mensaje),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
-          ),
-        ],
-      ),
+    showGlobalStatusModalAction(
+      context,
+      title: titulo,
+      message: mensaje,
+      icon: Icons.error,
+      iconColor: Colors.red,
+      confirmText: "OK",
     );
   }
 

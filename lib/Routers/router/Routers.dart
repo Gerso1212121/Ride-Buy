@@ -3,7 +3,14 @@ import 'package:camera/camera.dart';
 import 'package:dio/dio.dart';
 import 'package:ezride/App/DATA/repositories/Auth/ProfileUser_RepositoryData.dart';
 import 'package:ezride/App/DOMAIN/Entities/Auth/PROFILE_user_entity.dart';
+import 'package:ezride/App/presentation/pages/Home/ProfileSearchRent_Screen.dart';
 import 'package:ezride/App/presentation/pages/Home/ProfileUser_Screen.dart';
+import 'package:ezride/App/presentation/pages/Home/QRDevolucionScannerScreen.dart';
+import 'package:ezride/App/presentation/pages/Home/QRScannerScreen.dart';
+import 'package:ezride/App/presentation/pages/Home/VEHICULOSSOLICITADOS.dart';
+import 'package:ezride/App/presentation/pages/Home/VEHICULOS_EMPRESAS.dart';
+import 'package:ezride/App/presentation/pages/Home/VehiculosRENTADOS.dart';
+import 'package:ezride/App/presentation/pages/Home/payment_pending_screen.dart';
 import 'package:ezride/App/presentation/pages/auth/AuthComplete.dart';
 import 'package:ezride/App/presentation/pages/auth/AuthOtpPage.dart';
 import 'package:ezride/App/presentation/pages/auth/AuthPage.dart';
@@ -12,8 +19,9 @@ import 'package:ezride/App/presentation/pages/auth/UploadDocumentPage.dart';
 import 'package:ezride/App/presentation/pages/auth/CameraCapturePage.dart';
 import 'package:ezride/App/presentation/pages/auth/PersonalDataForm.dart';
 import 'package:ezride/Feature/Form_Empresa/FORMEMPRESAS.dart';
-import 'package:ezride/App/presentation/pages/Home/Chat_Screen.dart';
 import 'package:ezride/Feature/Form_Empresa/IMAGENES_SELECT.dart';
+import 'package:ezride/Feature/Form_Vehiculo/FORM_VEHICULO.dart';
+import 'package:ezride/Feature/Form_Vehiculo/VEHICLE_TEST_REAL.dart';
 import 'package:ezride/Feature/PAY_SUCCESS/Pay_Success_PRESENTATION.dart';
 import 'package:ezride/App/presentation/pages/Home/RentVehicle_Screen.dart';
 import 'package:ezride/App/presentation/pages/Home/VehicleDetail_Screen.dart';
@@ -159,9 +167,8 @@ class AppRouter {
       GoRoute(
         path: '/auto-details',
         pageBuilder: (context, state) {
-          print('🚗 Building AutoDetails');
           final extra = state.extra as Map<String, dynamic>? ?? {};
-          print('📦 AutoDetails extra: $extra');
+          print('🚗 Building AutoDetails with extra: $extra');
           return CustomTransitionPage(
             child: VehicleDetailScreen(
               vehicleId: extra['vehicleId'] ?? '',
@@ -170,8 +177,17 @@ class AppRouter {
               dailyPrice: extra['dailyPrice'] ?? 0.0,
               year: extra['year'] ?? '',
               isRented: extra['isRented'] ?? 'disponible',
+              empresaId: extra['empresaId'] ?? '',
+              // ✅ AGREGAR LOS NUEVOS PARÁMETROS
+              brand: extra['brand'] ?? '',
+              model: extra['model'] ?? '',
+              plate: extra['plate'] ?? '',
+              color: extra['color'] ?? '',
+              fuelType: extra['fuelType'] ?? '',
+              transmission: extra['transmission'] ?? '',
+              passengerCapacity: extra['passengerCapacity'] ?? 5,
             ),
-            transitionsBuilder: (_, animation, __, child) {
+            transitionsBuilder: (context, animation, _, child) {
               final offset = Tween(begin: const Offset(0, 1), end: Offset.zero)
                   .animate(CurvedAnimation(
                       parent: animation, curve: Curves.easeOutCubic));
@@ -180,34 +196,80 @@ class AppRouter {
           );
         },
       ),
-      GoRoute(
-        path: '/chat',
-        builder: (context, _) {
-          print('💬 Building ChatsUser');
-          return const ChatsUser();
-        },
-      ),
+
       GoRoute(
         path: '/rent-vehicle',
         builder: (context, state) {
-          print('🚘 Building RentVehicle');
           final extra = state.extra as Map<String, dynamic>? ?? {};
-          print('📦 RentVehicle extra: $extra');
           return RentVehicleScreen(
             vehicleId: extra['vehicleId'] ?? '',
             vehicleName: extra['vehicleName'] ?? '',
             vehicleType: extra['vehicleType'] ?? '',
             vehicleImageUrl: extra['vehicleImageUrl'] ?? '',
             dailyPrice: extra['dailyPrice'] ?? 0.0,
+            empresaId: extra['empresaId'] ?? '', // ✅ Nuevo parámetro
+          );
+        },
+      ),
+      // En tu archivo de rutas
+      GoRoute(
+        path: '/vehiculos-rentados',
+        pageBuilder: (context, state) {
+          return CustomTransitionPage(
+            child: const VehiculosRentadosScreen(),
+            transitionsBuilder: (context, animation, _, child) {
+              return SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(1, 0),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              );
+            },
+          );
+        },
+      ),
+// En tu archivo de configuración de rutas (app_router.dart o similar)
+      GoRoute(
+        path: '/empresa-profile',
+        name: 'EmpresaProfile',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          final empresaId = extra?['empresaId']?.toString() ?? '';
+
+          return ProfileScreenBussines(
+            empresaId: empresaId,
+            
           );
         },
       ),
       GoRoute(
+        path: '/empresa-vehiculos',
+        builder: (context, _) {
+          print('🏢 Building EmpresaVehiculosScreen');
+          return const EmpresaVehiculosScreen(); // Add the EmpresaVehiculosScreen here
+        },
+      ),
+      // En tu archivo de rutas
+      GoRoute(
+        path: '/payment-pending',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return PaymentPendingScreen(extra: extra);
+        },
+      ),
+      GoRoute(
+        path: '/empresa-solicitudes',
+        builder: (context, _) {
+          print('🏢 Building EmpresaVehiculosScreen');
+          return const SolicitudesPendientesScreen(); // Add the EmpresaVehiculosScreen here
+        },
+      ),
+
+      GoRoute(
         path: '/pay-confirm',
         builder: (context, state) {
-          print('💳 Building PayConfirm');
           final extra = state.extra as Map<String, dynamic>? ?? {};
-          print('📦 PayConfirm extra: $extra');
           return PayConfirmScreen(
             vehicleName: extra['vehicleName'] ?? '',
             vehicleType: extra['vehicleType'] ?? '',
@@ -216,7 +278,7 @@ class AppRouter {
             endDate: extra['endDate'] ?? '',
             duration: extra['duration'] ?? '',
             totalAmount: extra['totalAmount'] ?? '',
-            paymentMethod: extra['paymentMethod'] ?? 'Visa **** 4242',
+            rentaId: extra['rentaId'], // ✅ Nuevo parámetro
           );
         },
       ),
@@ -359,6 +421,36 @@ class AppRouter {
         builder: (context, state) {
           final datos = state.extra as Map<String, dynamic>?;
           return ImagenesSelectWidget(datosEmpresa: datos); // ✅ ahora existe
+        },
+      ),
+      GoRoute(
+        path: '/test-vehiculos',
+        builder: (context, state) {
+          return const VehicleTestRealWidget();
+        },
+      ),
+
+      // AGREGAR EN LA LISTA DE RUTAS
+      GoRoute(
+        path: '/qr-devolucion-scanner',
+        builder: (context, state) {
+          print('📱 Building QRDevolucionScannerScreen');
+          return const QRDevolucionScannerScreen();
+        },
+      ),
+
+      GoRoute(
+        path: '/qr-scanner',
+        builder: (context, state) {
+          print('📱 Building QRScannerScreen');
+          return const QRScannerScreen();
+        },
+      ),
+
+      GoRoute(
+        path: '/crear-vehiculo',
+        builder: (context, state) {
+          return const FormularioVehiculoWidget();
         },
       ),
     ],

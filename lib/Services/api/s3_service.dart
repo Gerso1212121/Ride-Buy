@@ -14,7 +14,8 @@ class S3Service {
   static Uri get _apiUrl => Uri.parse(_url);
 
   // ✅ URL BASE PÚBLICA - Ya no necesitas llamar a Lambda para ver imágenes
-  static const String _publicBaseUrl = "https://ezride-images.s3.us-west-1.amazonaws.com";
+  static const String _publicBaseUrl =
+      "https://ezride-images.s3.us-west-1.amazonaws.com";
 
   // Método para comprimir imagen
   static Future<File?> compressImage(File file, {int quality = 80}) async {
@@ -89,7 +90,7 @@ class S3Service {
   // ✅ MÉTODO OPTIMIZADO: Obtener URL pública DIRECTAMENTE (sin llamar a Lambda)
   static String getPublicUrl(String key) {
     if (key.isEmpty) return "";
-    
+
     // ✅ Construir URL pública directamente - MÁS RÁPIDO
     return "$_publicBaseUrl/$key";
   }

@@ -40,4 +40,15 @@ class Renta {
     this.damageDetected = false,
     required this.createdAt,
   });
+
+  // Método para calcular días de renta
+  int get diasRenta => fechaEntregaVehiculo.difference(fechaInicioRenta).inDays;
+
+  // Método para verificar si está activa
+  bool get estaActiva => 
+      status == RentalStatus.confirmada || status == RentalStatus.enCurso;
+
+  // Método para verificar si puede ser cancelada
+  bool get puedeCancelar => 
+      status == RentalStatus.pendiente || status == RentalStatus.confirmada;
 }

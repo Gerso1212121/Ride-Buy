@@ -78,3 +78,26 @@ enum RentaTipo { reserva, renta }
 enum DocumentoScope { vehiculo, empresa, perfil }
 
 enum EmpresaStatus { pendiente, activo, suspendido, cerrado }
+
+// =========================================================================
+// CHAT ENUMS
+// =========================================================================
+
+// CHAT - Solo lo esencial
+enum MessageStatus {
+  sent,
+  delivered,
+  read
+}
+
+enum ChatUserRole {
+  customer,
+  agent,
+  admin
+}
+
+enum ConversationType {
+  direct,
+  group,
+  support
+}

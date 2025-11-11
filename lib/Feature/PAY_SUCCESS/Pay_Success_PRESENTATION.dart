@@ -3,6 +3,7 @@ import 'package:ezride/Feature/PAY_SUCCESS/widgets/Pay_IconAnimation.dart';
 import 'package:ezride/Feature/PAY_SUCCESS/widgets/Pay_PrimaryButton_widget.dart';
 import 'package:ezride/Feature/PAY_SUCCESS/widgets/Pay_ResumeCard_widget.dart';
 import 'package:ezride/Feature/PAY_SUCCESS/widgets/Pay_SecondaryButton_widget.dart';
+import 'package:ezride/Routers/router/MainComplete.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -16,7 +17,8 @@ class PayConfirmScreen extends StatelessWidget {
     required this.endDate,
     required this.duration,
     required this.totalAmount,
-    this.paymentMethod = 'Visa **** 4242', // Valor por defecto
+    this.paymentMethod = 'Visa **** 4242',
+    this.rentaId, // ✅ ID de la renta creada
   }) : super(key: key);
 
   final String vehicleName;
@@ -27,32 +29,51 @@ class PayConfirmScreen extends StatelessWidget {
   final String duration;
   final String totalAmount;
   final String paymentMethod;
+  final String? rentaId;
 
   void _onClosePressed(BuildContext context) {
-    Navigator.of(context).pop();
+    context.go("/main");
   }
 
   void _onViewReservationPressed(BuildContext context) {
-    // Navegar a pantalla de reservas
-    print('Navegar a mis reservas');
-    // Navigator.push(context, MaterialPageRoute(builder: (_) => ReservationScreen()));
+    if (rentaId != null) {
+      // ✅ SI HAY rentaId: Navegar al índice 1 (Historial) de MainShell
+      print('Navegar a Historial (índice 1) con rentaId: $rentaId');
+      
+      // Usar la GlobalKey para cambiar al índice 1
+      if (mainShellGlobalKey.currentState != null && mainShellGlobalKey.currentState!.mounted) {
+        mainShellGlobalKey.currentState!.changeToTab(1);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Navegando a tu historial de reservas'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      } else {
+        // Si no estamos en MainShell, navegar allí con el índice 1
+        print('Navegando a MainShell con índice 1');
+        context.go('/main?tab=1');
+      }
+    } else {
+      // ✅ SI NO HAY rentaId: Solo navegar al MainShell (índice por defecto)
+      print('No hay rentaId, navegando al MainShell');
+      context.go('/main');
+    }
   }
 
-void _onBackToHomePressed(BuildContext context) async {
-  print('Volver al inicio');
-
-
-  // 3️⃣ Limpia el stack (quita la pantalla anterior)
-  GoRouter.of(context).go('/main');
-}
-
+  void _onBackToHomePressed(BuildContext context) {
+    print('Volver al inicio');
+    // ✅ Navegar al home principal (índice por defecto)
+    context.go('/main');
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FFFE),
       appBar: AppbarPaycWidgets(
-        onClosePressed: () => _onBackToHomePressed(context),
+        onClosePressed: () => _onClosePressed(context),
         title: 'Confirmación de pago',
       ),
       body: SafeArea(
@@ -146,11 +167,13 @@ void _onBackToHomePressed(BuildContext context) async {
   Widget _buildActionButtons(BuildContext context) {
     return Column(
       children: [
+        // ✅ Botón "Ver mi reserva" - Navega al historial (índice 1) si hay rentaId
         PrimaryButtonPaycWidgets(
-          onPressed: () => _onBackToHomePressed(context),
+          onPressed: () => _onViewReservationPressed(context),
           text: 'Ver mi reserva',
         ),
         const SizedBox(height: 12),
+        // ✅ Botón "Volver al inicio" - Navega al home (índice por defecto)
         SecondaryButtonPaycWidgets(
           onPressed: () => _onBackToHomePressed(context),
           text: 'Volver al inicio',

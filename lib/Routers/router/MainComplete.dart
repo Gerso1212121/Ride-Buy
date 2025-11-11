@@ -4,11 +4,14 @@ import 'package:ezride/App/presentation/pages/Home/Favoritos_Screen.dart';
 import 'package:ezride/App/presentation/pages/Home/HistoryAutos_Screen.dart';
 import 'package:ezride/App/presentation/pages/Home/Home_Screen.dart';
 import 'package:ezride/App/presentation/pages/Home/Notifications_Screen.dart';
-import 'package:ezride/App/presentation/pages/Home/ProfileUser_Screen.dart'; // ProfileUser
-import 'package:ezride/App/presentation/pages/Home/ProfileEmpresa.dart'; // PerfilEmpresaWidget
+import 'package:ezride/App/presentation/pages/Home/ProfileUser_Screen.dart';
+import 'package:ezride/App/presentation/pages/Home/ProfileEmpresa.dart';
 import 'package:ezride/App/presentation/pages/Home/Seach_Screen.dart';
 import 'package:flutter/material.dart';
 import 'package:ezride/Core/sessions/session_manager.dart';
+
+// ✅ DECLARA LA GLOBALKEY FUERA DE LAS CLASES
+final GlobalKey<_MainShellState> mainShellGlobalKey = GlobalKey<_MainShellState>();
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -21,29 +24,29 @@ class _MainShellState extends State<MainShell> {
   @override
   void initState() {
     super.initState();
-    _currentIndex = 0; // Reinicia siempre que MainShell se cree
+    _currentIndex = 0;
   }
 
   int _currentIndex = 0;
 
-  // Las pantallas que se mostrarán en el cuerpo de la MainShell si el usuario tiene una empresa
+  // ... tus listas de screens y titles (mantén todo igual)
+
   final List<Widget> _screensWithEmpresa = [
     const HomeScreen(),
     const ReservasWidget(),
     const SearchAutos(),
     const FavCards(),
-    const PerfilEmpresaWidget(), // Mostrar PerfilEmpresaWidget si tiene empresa
+    const PerfilEmpresaWidget(),
     const NotificacionesWidget(),
   ];
 
-  // Las pantallas que se mostrarán en el cuerpo si el usuario no tiene empresa
   final List<Widget> _screensWithoutEmpresa = [
     const HomeScreen(),
     const ReservasWidget(),
     const SearchAutos(),
     const FavCards(),
     const ProfileUser(),
-    const NotificacionesWidget(), // Si no tiene empresa, mostramos ProfileUser
+    const NotificacionesWidget(),
   ];
 
   final List<String> _titlesWithEmpresa = [
@@ -52,7 +55,7 @@ class _MainShellState extends State<MainShell> {
     'Buscar Autos',
     'Favoritos',
     'Notificaciones',
-    'Perfil Empresa', // Título para la pantalla de perfil de empresa
+    'Perfil Empresa',
   ];
 
   final List<String> _titlesWithoutEmpresa = [
@@ -61,16 +64,16 @@ class _MainShellState extends State<MainShell> {
     'Buscar Autos',
     'Favoritos',
     'Notificaciones',
-    'Perfil Usuario', // Título para la pantalla de perfil de empresa
+    'Perfil Usuario',
   ];
+  
   List<String> get _titles => SessionManager.currentEmpresa != null
       ? _titlesWithEmpresa
       : _titlesWithoutEmpresa;
 
-  // Si el usuario tiene una empresa, usamos las pantallas con empresa.
   List<Widget> get _screens => SessionManager.currentEmpresa != null
-      ? _screensWithEmpresa // Muestra PerfilEmpresaWidget si tiene empresa
-      : _screensWithoutEmpresa; // Muestra ProfileUser si no tiene empresa
+      ? _screensWithEmpresa
+      : _screensWithoutEmpresa;
 
   void _onTabSelected(int index) {
     setState(() {
@@ -78,9 +81,19 @@ class _MainShellState extends State<MainShell> {
     });
   }
 
+  // ✅ MÉTODO PÚBLICO para cambiar tabs desde fuera
+  void changeToTab(int index) {
+    if (mounted) {
+      setState(() {
+        _currentIndex = index;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: mainShellGlobalKey, // ✅ Asigna la key al Scaffold
       appBar: CustomAppBar(
         title: _titles[_currentIndex],
         onNotificationsPressed: () {
@@ -97,8 +110,7 @@ class _MainShellState extends State<MainShell> {
           BottomBarItem(
             icon: Icons.home,
             label: 'Inicio',
-            onPressed: () => _onTabSelected(
-                0), // Ahora el índice es 1 ya que la primera pantalla es PerfilEmpresaWidget
+            onPressed: () => _onTabSelected(0),
           ),
           BottomBarItem(
             icon: Icons.history,
@@ -118,8 +130,7 @@ class _MainShellState extends State<MainShell> {
           BottomBarItem(
             icon: Icons.person,
             label: 'Perfil',
-            onPressed: () => _onTabSelected(
-                4), // Cambié el índice a 0 ya que ProfileUser es la primera pantalla si no tiene empresa
+            onPressed: () => _onTabSelected(4),
           ),
         ],
       ),

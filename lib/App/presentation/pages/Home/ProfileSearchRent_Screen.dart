@@ -5,14 +5,22 @@ import 'package:ezride/Core/widgets/Reviews/Reviews_card.dart';
 import 'package:ezride/Core/widgets/Reviews/Reviews_global.dart';
 import 'package:ezride/Feature/PROFILE_RENT/widget/Profile_Content_widget.dart';
 import 'package:ezride/Feature/PROFILE_RENT/widget/Profile_Header_widget.dart';
+import 'package:ezride/Services/utils/EmpresasService.dart';
 import 'package:ezride/flutter_flow/flutter_flow_theme.dart';
 import 'package:ezride/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import 'package:ezride/App/DATA/models/Empresas_model.dart';
 
 class ProfileScreenBussines extends StatefulWidget {
-  const ProfileScreenBussines({super.key});
+  final String empresaId;
+  final Map<String, dynamic>? empresaData;
+
+  const ProfileScreenBussines({
+    super.key,
+    required this.empresaId,
+    this.empresaData,
+  });
 
   @override
   State<ProfileScreenBussines> createState() => _ProfileScreenBussinesState();
@@ -22,13 +30,29 @@ class _ProfileScreenBussinesState extends State<ProfileScreenBussines> {
   final ScrollController _scrollController = ScrollController();
   final ValueNotifier<double> _scrollOffset = ValueNotifier(0.0);
 
-  late final ProfileData _profileData = _getProfileData();
-  late final List<Review> _reviews = _getReviews();
+  late Future<Map<String, dynamic>> _profileDataFuture;
+  EmpresasModel? _empresa;
+  double _rating = 0.0;
+  int _reviewCount = 0;
+  int _totalVehiculos = 0;
+  int _vehiculosDisponibles = 0;
+  List<Map<String, dynamic>> _serviciosAdicionales = [];
+  List<String> _politicasRenta = [];
+  List<Map<String, dynamic>> _resenas = [];
+  bool _hasInitialData = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+
+    if (widget.empresaData != null) {
+      _hasInitialData = true;
+      _initializeWithExistingData(widget.empresaData!);
+      _profileDataFuture = _loadAdditionalData();
+    } else {
+      _profileDataFuture = _loadFullProfileData();
+    }
   }
 
   @override
@@ -45,130 +69,309 @@ class _ProfileScreenBussinesState extends State<ProfileScreenBussines> {
     }
   }
 
+  // ✅ INICIALIZAR CON DATOS EXISTENTES
+  void _initializeWithExistingData(Map<String, dynamic> empresaData) {
+    try {
+      print(
+          '✅ Inicializando con datos existentes de: ${empresaData['nombre']}');
+
+      setState(() {
+        _empresa = EmpresasModel.fromJson(empresaData);
+        _rating = 4.5;
+        _reviewCount = 0;
+        _totalVehiculos = 0;
+        _vehiculosDisponibles = 0;
+      });
+    } catch (e) {
+      print('❌ Error inicializando con datos existentes: $e');
+      _hasInitialData = false;
+    }
+  }
+
+  // ✅ CARGAR SOLO DATOS ADICIONALES
+  Future<Map<String, dynamic>> _loadAdditionalData() async {
+    try {
+      print('📊 Cargando datos adicionales para empresa: ${widget.empresaId}');
+
+      final resultados = await Future.wait([
+        EmpresasService.getEstadisticasEmpresa(widget.empresaId),
+        EmpresasService.getServiciosAdicionales(widget.empresaId),
+        EmpresasService.getPoliticasRenta(widget.empresaId),
+        EmpresasService.getResenasRecientes(widget.empresaId),
+      ], eagerError: false);
+
+      final estadisticas = resultados[0] as Map<String, dynamic>;
+      final servicios = resultados[1] as List<Map<String, dynamic>>;
+      final politicas = resultados[2] as List<String>;
+      final resenas = resultados[3] as List<Map<String, dynamic>>;
+
+      if (mounted) {
+        setState(() {
+          _rating = estadisticas['rating_promedio'] as double;
+          _reviewCount = estadisticas['total_resenas'] as int;
+          _totalVehiculos = estadisticas['total_vehiculos'] as int;
+          _vehiculosDisponibles = estadisticas['vehiculos_disponibles'] as int;
+          _serviciosAdicionales = servicios;
+          _politicasRenta = politicas;
+          _resenas = resenas;
+        });
+      }
+
+      return {
+        'empresa': _empresa,
+        ...estadisticas,
+        'servicios_adicionales': servicios,
+        'politicas_renta': politicas,
+        'reseñas_recientes': resenas,
+      };
+    } catch (e) {
+      print('❌ Error cargando datos adicionales: $e');
+      return {};
+    }
+  }
+
+  // ✅ CARGAR TODOS LOS DATOS - CORREGIDO
+  Future<Map<String, dynamic>> _loadFullProfileData() async {
+    try {
+      print('🏢 Cargando perfil completo de empresa: ${widget.empresaId}');
+
+      final data =
+          await EmpresasService.getEmpresaProfileData(widget.empresaId);
+
+      if (mounted) {
+        setState(() {
+          // ✅ CORREGIDO: Convertir Map a EmpresasModel
+          final empresaMap = data['empresa'] as Map<String, dynamic>;
+          _empresa = EmpresasModel.fromJson(empresaMap);
+
+          _rating = data['rating_promedio'] as double;
+          _reviewCount = data['total_resenas'] as int;
+          _totalVehiculos = data['total_vehiculos'] as int;
+          _vehiculosDisponibles = data['vehiculos_disponibles'] as int;
+          _serviciosAdicionales =
+              data['servicios_adicionales'] as List<Map<String, dynamic>>;
+          _politicasRenta = data['politicas_renta'] as List<String>;
+          _resenas = data['reseñas_recientes'] as List<Map<String, dynamic>>;
+        });
+      }
+
+      return data;
+    } catch (e) {
+      print('❌ Error cargando datos del perfil: $e');
+      return {};
+    }
+  }
+
+  ProfileData _getProfileData() {
+    if (_empresa == null) {
+      print('❌ _empresa es null, usando datos por defecto');
+      return _getDefaultProfileData();
+    }
+
+    // ✅ DEBUG EXTENSIVO: Verificar TODOS los datos de la empresa
+    print('🖼️ === DEBUG COMPLETO DE EMPRESA ===');
+    print('   - Nombre: ${_empresa!.nombre}');
+    print('   - ID: ${_empresa!.id}');
+    print('   - imagenPerfil: ${_empresa!.imagenPerfil}');
+    print('   - imagenBanner: ${_empresa!.imagenBanner}');
+    print('   - imagenPerfil es null?: ${_empresa!.imagenPerfil == null}');
+    print('   - imagenBanner es null?: ${_empresa!.imagenBanner == null}');
+    print(
+        '   - imagenPerfil está vacío?: ${_empresa!.imagenPerfil?.isEmpty ?? true}');
+    print(
+        '   - imagenBanner está vacío?: ${_empresa!.imagenBanner?.isEmpty ?? true}');
+
+    // Verificar si las URLs son válidas
+    if (_empresa!.imagenPerfil != null) {
+      print(
+          '   - imagenPerfil empieza con http?: ${_empresa!.imagenPerfil!.startsWith('http')}');
+    }
+    if (_empresa!.imagenBanner != null) {
+      print(
+          '   - imagenBanner empieza con http?: ${_empresa!.imagenBanner!.startsWith('http')}');
+    }
+    print('====================================');
+
+    final profileData = ProfileData(
+      businessName: _empresa!.nombre,
+      backgroundImageUrl: _empresa!.imagenBanner ?? _getDefaultBackgroundImage(),
+      profileImageUrl: _empresa!.imagenPerfil ?? _getDefaultProfileImage(),
+      rating: _rating,
+      reviewCount: _reviewCount,
+      aboutUs: _generateAboutUsText(),
+      address: _empresa!.direccion,
+      phone: _empresa!.telefono,
+      email: _empresa!.email,
+      businessHours:
+          'Lun - Vie: 8:00 AM - 8:00 PM, Sáb - Dom: 9:00 AM - 6:00 PM',
+      rentalPolicies:
+          _politicasRenta.map((politica) => RentalPolicy(politica)).toList(),
+      additionalServices: _serviciosAdicionales.map((servicio) {
+        return AdditionalService(
+          name: servicio['nombre'],
+          icon: _getIconFromString(servicio['icono']),
+          width: _calculateWidth(servicio['nombre']),
+        );
+      }).toList(),
+    );
+
+    print('🎯 URLs que se enviarán al UI:');
+    print('   - backgroundImageUrl: ${profileData.backgroundImageUrl}');
+    print('   - profileImageUrl: ${profileData.profileImageUrl}');
+
+    return profileData;
+
+  }
+  String _getDefaultBackgroundImage() {
+    return 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80';
+  }
+  String _getDefaultProfileImage() {
+    return 'https://images.unsplash.com/photo-1653479499749-a65f2d322f7f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTg0MjM4MTV8&ixlib=rb-4.1.0&q=80&w=1080';
+  }
+
+
+
+  String _generateAboutUsText() {
+    if (_empresa == null) return '';
+
+    final vehiculosText = _totalVehiculos > 0
+        ? 'Contamos con una flota de $_totalVehiculos vehículos, ${_vehiculosDisponibles} disponibles actualmente.'
+        : 'Ofrecemos una amplia variedad de vehículos para todas sus necesidades.';
+
+    return '${_empresa!.nombre} es una empresa dedicada a la renta de vehículos con los más altos estándares de calidad. $vehiculosText Nuestra prioridad es brindar un servicio confiable y seguro para todos nuestros clientes.';
+  }
+
+  IconData _getIconFromString(String iconName) {
+    switch (iconName) {
+      case 'local_shipping':
+        return Icons.local_shipping_rounded;
+      case 'security':
+        return Icons.security_rounded;
+      case 'support_agent':
+        return Icons.support_agent_rounded;
+      case 'clean_hands':
+        return Icons.clean_hands_rounded;
+      default:
+        return Icons.help_rounded;
+    }
+  }
+
+  double _calculateWidth(String text) {
+    final length = text.length;
+    if (length <= 10) return 60;
+    if (length <= 15) return 80;
+    return 100;
+  }
+
+  List<Review> _getReviews() {
+    return _resenas
+        .map((resena) => Review(
+              userName: resena['userName'] ?? 'Usuario',
+              userImageUrl: resena['userImageUrl'] ??
+                  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+              rating: (resena['rating'] ?? 4.0).toDouble(),
+              comment: resena['comment'] ?? 'Sin comentario',
+              timeAgo: resena['timeAgo'] ?? 'Reciente',
+            ))
+        .toList();
+  }
+
+  ProfileData _getDefaultProfileData() {
+    return ProfileData(
+      businessName: 'Cargando...',
+      backgroundImageUrl:
+          'https://images.unsplash.com/photo-1503376780353-7e6692767b70?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+      profileImageUrl:
+          'https://images.unsplash.com/photo-1653479499749-a65f2d322f7f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTg0MjM4MTV8&ixlib=rb-4.1.0&q=80&w=1080',
+      rating: 0.0,
+      reviewCount: 0,
+      aboutUs: 'Cargando información de la empresa...',
+      address: 'Cargando...',
+      phone: 'Cargando...',
+      email: 'Cargando...',
+      businessHours: 'Cargando...',
+      rentalPolicies: [RentalPolicy('Cargando políticas...')],
+      additionalServices: [
+        AdditionalService(
+            name: 'Cargando...', icon: Icons.hourglass_empty, width: 80),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-      body: Stack(
-        children: <Widget>[
-          // ✅ REUTILIZACIÓN DEL WIDGET ParallaxProfileHeader
-          ValueListenableBuilder<double>(
-            valueListenable: _scrollOffset,
-            builder: (context, offset, _) {
-              final double parallaxOffset =
-                  _scrollOffset.value.clamp(0.0, 150.0) * 0.4;
-              return ParallaxProfileHeader(
-                backgroundImageUrl: _profileData.backgroundImageUrl,
-                profileImageUrl: _profileData.profileImageUrl,
-                businessName: _profileData.businessName,
-                businessType: 'Renta de Autos Premium',
-                onBackPressed: () => Navigator.of(context).pop(),
-                height: 278,
-                parallaxOffset: parallaxOffset,
-                avatarSize: 100,
-              );
-            },
-          ),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _profileDataFuture,
+        builder: (context, snapshot) {
+          final profileData = _getProfileData();
+          final reviews = _getReviews();
 
-          // ✅ El contenido ya no depende del scrollOffset → no se rebuilda
-          _ScrollContent(
-            controller: _scrollController,
-            profileData: _profileData,
-            reviews: _reviews,
-            onContact: _contactBusiness,
-            onViewCars: _viewCars,
-            onOpenLocation: _openLocation,
-          ),
-        ],
+          final isLoading =
+              snapshot.connectionState == ConnectionState.waiting &&
+                  !_hasInitialData;
+
+          return Stack(
+            children: <Widget>[
+              ValueListenableBuilder<double>(
+                valueListenable: _scrollOffset,
+                builder: (context, offset, _) {
+                  final double parallaxOffset =
+                      _scrollOffset.value.clamp(0.0, 150.0) * 0.4;
+                  return ParallaxProfileHeader(
+                    backgroundImageUrl: profileData.backgroundImageUrl,
+                    profileImageUrl: profileData.profileImageUrl,
+                    businessName: profileData.businessName,
+                    businessType: 'Renta de Vehículos',
+                    onBackPressed: () => Navigator.of(context).pop(),
+                    height: 278,
+                    parallaxOffset: parallaxOffset,
+                    avatarSize: 100,
+                  );
+                },
+              ),
+              _ScrollContent(
+                controller: _scrollController,
+                profileData: profileData,
+                reviews: reviews,
+                onContact: _contactBusiness,
+                onViewCars: _viewCars,
+                onOpenLocation: _openLocation,
+                isLoading: isLoading,
+                hasInitialData: _hasInitialData,
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
   void _contactBusiness() {
-    print('Contactar con la empresa');
+    if (_empresa != null) {
+      print('📞 Contactando a: ${_empresa!.nombre}');
+    }
   }
 
   void _viewCars() {
-    print('Ver autos disponibles');
+    if (_empresa != null) {
+      print('🚗 Viendo vehículos de: ${_empresa!.nombre}');
+    }
   }
 
   void _openLocation() {
-    print('Abrir ubicación');
-  }
-
-  // ✅ DATOS DE EJEMPLO
-  ProfileData _getProfileData() {
-    return ProfileData(
-      businessName: 'AutoRent Premium',
-      backgroundImageUrl:
-          'https://images.unsplash.com/photo-1503376780353-7e6692767b70?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
-      profileImageUrl:
-          'https://images.unsplash.com/photo-1653479499749-a65f2d322f7f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTg0MjM4MTV8&ixlib=rb-4.1.0&q=80&w=1080',
-      rating: 4.5,
-      reviewCount: 128,
-      aboutUs:
-          'AutoRent Premium es una empresa líder en renta de vehículos con más de 15 años de experiencia. Ofrecemos una amplia flota de autos desde económicos hasta de lujo, todos en excelente estado y con mantenimiento regular.',
-      address: 'Av. Principal 123, Ciudad, País',
-      phone: '+1 234 567 8900',
-      email: 'info@autorent.com',
-      businessHours:
-          'Lun - Vie: 8:00 AM - 8:00 PM, Sáb - Dom: 9:00 AM - 6:00 PM',
-      rentalPolicies: [
-        RentalPolicy('Edad mínima: 21 años con licencia vigente'),
-        RentalPolicy('Seguro incluido en todas las rentas'),
-        RentalPolicy('Combustible: entregar con el mismo nivel'),
-        RentalPolicy('Cancelación gratuita hasta 24h antes'),
-      ],
-      additionalServices: [
-        AdditionalService(
-            name: 'Combustible completo',
-            icon: Icons.local_gas_station_rounded,
-            width: 80),
-        AdditionalService(
-            name: 'Sillas para niños',
-            icon: Icons.child_friendly_rounded,
-            width: 86),
-        AdditionalService(
-            name: 'GPS incluido', icon: Icons.gps_fixed_rounded, width: 60),
-        AdditionalService(
-            name: 'Entrega a domicilio',
-            icon: Icons.local_shipping_rounded,
-            width: 64),
-      ],
-    );
-  }
-
-  List<Review> _getReviews() {
-    return [
-      Review(
-        userName: 'María González',
-        userImageUrl: 'https://example.com/user1.jpg',
-        rating: 5.0,
-        comment:
-            'Excelente servicio! El auto estaba impecable y el proceso de renta fue muy sencillo. Definitivamente volveré a rentar con ellos.',
-        timeAgo: 'Hace 2 días',
-      ),
-      Review(
-        userName: 'Carlos Rodríguez',
-        userImageUrl: 'https://example.com/user2.jpg',
-        rating: 4.0,
-        comment:
-            'Buen servicio en general. El auto estaba limpio y en buen estado. La entrega fue puntual.',
-        timeAgo: 'Hace 1 semana',
-      ),
-      Review(
-        userName: 'Ana Martínez',
-        userImageUrl: 'https://example.com/user3.jpg',
-        rating: 4.5,
-        comment:
-            'Muy profesionales. Me ayudaron a elegir el auto perfecto para mi viaje familiar. Lo recomiendo!',
-        timeAgo: 'Hace 3 semanas',
-      ),
-    ];
+    if (_empresa != null &&
+        _empresa!.latitud != null &&
+        _empresa!.longitud != null) {
+      print('📍 Abriendo ubicación de: ${_empresa!.nombre}');
+    }
   }
 }
 
-// ✅ WIDGET SEPARADO PARA CONTENIDO SCROLLABLE
+// ... (el resto del código de _ScrollContent, _ContentBody, etc. permanece igual)
+
+// ✅ MEJORADO: _ScrollContent con manejo de datos iniciales
 class _ScrollContent extends StatelessWidget {
   final ScrollController controller;
   final ProfileData profileData;
@@ -176,6 +379,8 @@ class _ScrollContent extends StatelessWidget {
   final VoidCallback onContact;
   final VoidCallback onViewCars;
   final VoidCallback onOpenLocation;
+  final bool isLoading;
+  final bool hasInitialData;
 
   const _ScrollContent({
     required this.controller,
@@ -184,6 +389,8 @@ class _ScrollContent extends StatelessWidget {
     required this.onContact,
     required this.onViewCars,
     required this.onOpenLocation,
+    this.isLoading = false,
+    this.hasInitialData = false,
   });
 
   @override
@@ -192,7 +399,6 @@ class _ScrollContent extends StatelessWidget {
       controller: controller,
       physics: const ClampingScrollPhysics(),
       slivers: <Widget>[
-        // ✅ APP BAR TRANSPARENTE
         const SliverAppBar(
           expandedHeight: 250,
           flexibleSpace: SizedBox(),
@@ -204,29 +410,47 @@ class _ScrollContent extends StatelessWidget {
           toolbarHeight: 0,
           collapsedHeight: 0,
         ),
-
-        // ✅ CONTENIDO PRINCIPAL
         SliverToBoxAdapter(
-          child: _ContentBody(
-            profileData: profileData,
-            reviews: reviews,
-            onContact: onContact,
-            onViewCars: onViewCars,
-            onOpenLocation: onOpenLocation,
-          ),
+          child: isLoading
+              ? _buildLoadingState()
+              : _ContentBody(
+                  profileData: profileData,
+                  reviews: reviews,
+                  onContact: onContact,
+                  onViewCars: onViewCars,
+                  onOpenLocation: onOpenLocation,
+                  hasInitialData: hasInitialData,
+                ),
         ),
       ],
     );
   }
+
+  Widget _buildLoadingState() {
+    return Container(
+      height: 400,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Cargando perfil de la empresa...'),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-// ✅ WIDGET SEPARADO PARA EL CUERPO DEL CONTENIDO
+// ✅ MEJORADO: _ContentBody con indicador de datos iniciales
 class _ContentBody extends StatelessWidget {
   final ProfileData profileData;
   final List<Review> reviews;
   final VoidCallback onContact;
   final VoidCallback onViewCars;
   final VoidCallback onOpenLocation;
+  final bool hasInitialData;
 
   const _ContentBody({
     required this.profileData,
@@ -234,6 +458,7 @@ class _ContentBody extends StatelessWidget {
     required this.onContact,
     required this.onViewCars,
     required this.onOpenLocation,
+    this.hasInitialData = false,
   });
 
   @override
@@ -250,13 +475,31 @@ class _ContentBody extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 24),
         child: Column(
           children: <Widget>[
-            // Rating centrado
-            _buildRatingSection(context),
+            // ✅ Indicador de carga rápida (opcional)
+            if (hasInitialData)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check_circle, size: 16, color: Colors.green),
+                    SizedBox(width: 4),
+                    Text(
+                      'Datos cargados instantáneamente',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
             // Botones de acción
             _buildActionButtons(context),
 
-            // ✅ SECCIONES DE CONTENIDO
+            // Secciones de contenido
             _buildContentSection(
               ContentSection(
                 type: ContentSectionType.contactInfo,
@@ -294,7 +537,7 @@ class _ContentBody extends StatelessWidget {
               ),
             ),
 
-            // ✅ SECCIÓN DE RESEÑAS OPTIMIZADA
+            // Sección de reseñas
             _buildReviewsSection(context),
           ],
         ),
@@ -335,7 +578,7 @@ class _ContentBody extends StatelessWidget {
           // Botón VER AUTOS
           Flexible(
             child: CustomButtonWithStates(
-              onPressed: onContact,
+              onPressed: onViewCars,
               text: 'Autos',
               icon: Icons.directions_car_rounded,
               backgroundColor: FlutterFlowTheme.of(context).primary,
@@ -347,13 +590,14 @@ class _ContentBody extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
+
           const SizedBox(width: 12),
 
-          // Botón VER AUTOS
+          // Botón UBICACIÓN
           Flexible(
             child: CustomButtonWithStates(
-              onPressed: onContact,
-              text: 'Ubicacion',
+              onPressed: onOpenLocation,
+              text: 'Ubicación',
               icon: Icons.location_on_rounded,
               backgroundColor: FlutterFlowTheme.of(context).primary,
               hoverColor: FlutterFlowTheme.of(context).primary.withOpacity(0.8),
@@ -369,37 +613,11 @@ class _ContentBody extends StatelessWidget {
     );
   }
 
-  Widget _buildRatingSection(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: RatingWidget(
-        rating: profileData.rating,
-        reviewCount: profileData.reviewCount,
-        starSize: 24,
-        starSpacing: 4,
-        textSpacing: 8,
-        mainAxisAlignment: MainAxisAlignment.center,
-        ratingTextStyle: FlutterFlowTheme.of(context).titleMedium.override(
-              font: GoogleFonts.lato(
-                fontWeight: FontWeight.bold,
-                fontStyle: FlutterFlowTheme.of(context).titleMedium.fontStyle,
-              ),
-              letterSpacing: 0.0,
-              fontWeight: FontWeight.bold,
-            ),
-        reviewsTextStyle: FlutterFlowTheme.of(context).bodyMedium.override(
-              font: GoogleFonts.lato(
-                fontWeight: FlutterFlowTheme.of(context).bodyMedium.fontWeight,
-                fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
-              ),
-              color: FlutterFlowTheme.of(context).secondaryText,
-              letterSpacing: 0.0,
-            ),
-      ),
-    );
-  }
-
   Widget _buildReviewsSection(BuildContext context) {
+    if (reviews.isEmpty) {
+      return SizedBox.shrink(); // Ocultar sección si no hay reseñas
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: Column(
@@ -418,8 +636,6 @@ class _ContentBody extends StatelessWidget {
                 ),
           ),
           const SizedBox(height: 16),
-
-          // ✅ LISTVIEW.BUILDER PARA MEJOR RENDIMIENTO
           _ReviewsList(reviews: reviews),
         ],
       ),
@@ -427,7 +643,7 @@ class _ContentBody extends StatelessWidget {
   }
 }
 
-// ✅ WIDGET SEPARADO PARA LISTA DE RESEÑAS
+// Widget para lista de reseñas
 class _ReviewsList extends StatelessWidget {
   final List<Review> reviews;
 
@@ -454,7 +670,7 @@ class _ReviewsList extends StatelessWidget {
   }
 }
 
-// ✅ CLASES DE DATOS (mantener igual)
+// Clases de datos
 class ProfileData {
   final String businessName;
   final String backgroundImageUrl;

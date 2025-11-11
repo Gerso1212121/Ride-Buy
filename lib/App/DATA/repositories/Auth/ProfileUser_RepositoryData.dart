@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
@@ -40,22 +41,51 @@ class ProfileUserRepositoryData implements ProfileUserRepositoryDomain {
     required String password,
   }) async {
     try {
-      // 🔒 Verifica si ya existe como usuario verificado
-      if (await _userExists(email)) {
+      print('🔄 INICIANDO REGISTRO PENDIENTE');
+      print('📧 Email recibido: $email');
+      print('🔐 Password length: ${password.length}');
+
+      // 🔒 Verifica si ya existe como usuario verificado CON TIMEOUT
+      const checkUserSql =
+          'SELECT COUNT(*) AS count FROM profiles WHERE email = @e';
+      final userCheckResult = await RenderDbClient.queryWithTimeout(
+        checkUserSql,
+        parameters: {'e': email},
+        timeout: Duration(seconds: 10),
+      );
+
+      final userExists = (userCheckResult.first['count'] ?? 0) > 0;
+      if (userExists) {
+        print('❌ Usuario ya existe en profiles: $email');
         throw Exception('El correo ya está registrado.');
       }
 
-      // 🔍 Verificar si ya está en "register_pending"
+      // 🔍 Verificar si ya está en "register_pending" CON TIMEOUT
       const sqlCheckPending = 'SELECT * FROM register_pending WHERE email = @e';
-      final existingPending =
-          await RenderDbClient.query(sqlCheckPending, parameters: {'e': email});
+      final existingPending = await RenderDbClient.queryWithTimeout(
+        sqlCheckPending,
+        parameters: {'e': email},
+        timeout: Duration(seconds: 10),
+      );
 
+      print('📊 Usuario en pending: ${existingPending.isNotEmpty}');
+
+      // ✅ USAR UTC CONSISTENTEMENTE
       final now = DateTime.now().toUtc();
       final otp = _generateOTP();
       final hashedPass = _hashPassword(password);
 
+      // ✅ Crear expiración en UTC
+      final otpExpiresAt = now.add(const Duration(minutes: 10));
+
+      print('⏰ OTP generado: $otp');
+      print('⏰ Hora creación (UTC): $now');
+      print('⏰ Hora expiración (UTC): $otpExpiresAt');
+
       // 🌀 Si ya existe en pending, actualiza OTP y reenvía
       if (existingPending.isNotEmpty) {
+        print('🔁 Actualizando OTP existente para: $email');
+
         const sqlUpdate = '''
         UPDATE register_pending
         SET otp_code = @otp_code,
@@ -65,42 +95,52 @@ class ProfileUserRepositoryData implements ProfileUserRepositoryDomain {
             updated_at = @updated_at
         WHERE email = @email
       ''';
-        await RenderDbClient.query(sqlUpdate, parameters: {
-          'otp_code': otp,
-          'otp_created_at': now,
-          'otp_expires_at': now.add(const Duration(minutes: 10)),
-          'passwd': hashedPass,
-          'updated_at': now,
-          'email': email,
-        });
+
+        await RenderDbClient.queryWithTimeout(
+          sqlUpdate,
+          parameters: {
+            'otp_code': otp,
+            'otp_created_at': now,
+            'otp_expires_at': otpExpiresAt,
+            'passwd': hashedPass,
+            'updated_at': now,
+            'email': email,
+          },
+          timeout: Duration(seconds: 10),
+        );
 
         await _sendOTPEmail(email, otp);
-        print('🔁 OTP actualizado y reenviado a $email');
+        print('✅ OTP actualizado y reenviado a $email');
 
         final updatedModel = AuthRegisterPendingModel.fromMap({
           ...existingPending.first,
           'otp_code': otp,
           'otp_created_at': now,
-          'otp_expires_at': now.add(const Duration(minutes: 10)),
+          'otp_expires_at': otpExpiresAt,
           'updated_at': now,
         });
+
+        print('📦 Modelo actualizado creado: ${updatedModel.id}');
         return updatedModel.toEntity();
       }
 
       // 🆕 Si no existe en pending, crear nuevo registro
+      print('🆕 Creando nuevo registro pendiente para: $email');
       final newId = const Uuid().v4();
+
       final pendingModel = AuthRegisterPendingModel(
         id: newId,
         email: email,
         passwd: hashedPass,
         otpCode: otp,
         otpCreatedAt: now,
-        otpExpiresAt: now.add(const Duration(minutes: 10)),
+        otpExpiresAt: otpExpiresAt,
         verified: false,
         createdAt: now,
         updatedAt: now,
       );
 
+      print('📋 Insertando en base de datos...');
       const sqlInsert = '''
       INSERT INTO register_pending (
         id, email, passwd, otp_code, otp_created_at, otp_expires_at, verified, created_at, updated_at
@@ -108,14 +148,23 @@ class ProfileUserRepositoryData implements ProfileUserRepositoryDomain {
         @id, @email, @passwd, @otp_code, @otp_created_at, @otp_expires_at, @verified, @created_at, @updated_at
       )
     ''';
-      await RenderDbClient.query(sqlInsert, parameters: pendingModel.toMap());
+
+      await RenderDbClient.queryWithTimeout(
+        sqlInsert,
+        parameters: pendingModel.toMap(),
+        timeout: Duration(seconds: 10),
+      );
+
+      print('✅ Registro insertado en base de datos');
 
       await _sendOTPEmail(email, otp);
       print('✅ OTP enviado por primera vez a $email');
+      print('🎉 Registro pendiente completado exitosamente');
 
       return pendingModel.toEntity();
     } catch (e) {
       print('❌ Error en registerPendingUser: $e');
+      print('🔍 Stack trace: ${e.toString()}');
       rethrow;
     }
   }
@@ -290,8 +339,21 @@ class ProfileUserRepositoryData implements ProfileUserRepositoryDomain {
   // ------------------------------
   Future<bool> _userExists(String email) async {
     const sql = 'SELECT COUNT(*) AS count FROM profiles WHERE email = @e';
-    final r1 = await RenderDbClient.query(sql, parameters: {'e': email});
-    return (r1.first['count'] ?? 0) > 0;
+    try {
+      final result = await RenderDbClient.queryWithTimeout(
+        sql,
+        parameters: {'e': email},
+        timeout: Duration(seconds: 10),
+      );
+      return (result.first['count'] ?? 0) > 0;
+    } on TimeoutException {
+      print('⏰ Timeout verificando usuario existente: $email');
+      // En caso de timeout, asumimos que el usuario no existe para permitir el registro
+      return false;
+    } catch (e) {
+      print('❌ Error verificando usuario existente: $e');
+      rethrow;
+    }
   }
 
 //ENVIO DE CORREO
